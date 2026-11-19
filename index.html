@@ -6,12 +6,6 @@
   <meta name="theme-color" content="#000">
   <title>AXEL</title>
   <link rel="stylesheet" href="styles.css">
-  <script type="importmap">
-    { "imports": {
-        "three": "/node_modules/three/build/three.module.js",
-        "three/addons/": "/node_modules/three/examples/jsm/"
-    } }
-  </script>
 </head>
 <body data-mode="boot">
   <canvas id="gl"></canvas>
@@ -44,7 +38,7 @@
     <span>DÌ</span><b>«CIAO AXEL»</b>
     <div class="mic"><i id="micBar"></i></div>
   </div>
-  <div id="gate">
+  <div id="gate" onclick="if(window.__axelStart) window.__axelStart(); else this.style.display='none'">
     <div class="gate-inner">
       <div class="gate-ring"></div>
       <b>AXEL</b>
@@ -83,49 +77,4 @@
         </div>
       </section>
       <section class="step">
-        <div class="step-head"><b>02</b><div><h3>Voce <em>facoltativo</em></h3><p>Con ElevenLabs Axel ha una voce britannica molto realistica. Senza, usa una voce neurale gratuita.</p></div></div>
-        <div class="choice">
-          <label><input type="radio" name="voice" value="free" checked> Voce gratuita</label>
-          <label><input type="radio" name="voice" value="eleven"> ElevenLabs</label>
-        </div>
-        <div class="field" id="elevenField">
-          <input id="elevenKey" type="password" placeholder="sk_..." spellcheck="false">
-          <a class="btn" href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">OTTIENI LA CHIAVE ↗</a>
-        </div>
-        <small class="state" id="elevenState"></small>
-      </section>
-      <section class="step">
-        <div class="step-head"><b>03</b><div><h3>Calendario <em>facoltativo</em></h3><p>Incolla il link privato del tuo calendario: Axel conoscerà i tuoi impegni.</p></div></div>
-        <div class="field"><input id="calendarUrl" type="password" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" spellcheck="false"></div>
-        <small class="state" id="calendarState"></small>
-      </section>
-      <p class="setup-error" id="setupError"></p>
-      <div class="row">
-        <button type="button" id="setupClose" class="ghost">CHIUDI</button>
-        <button type="submit" id="setupSave" class="primary">ATTIVA AXEL</button>
-      </div>
-    </form>
-  </div>
-  <nav id="controls">
-    <button id="setupBtn"><i id="aiDot"></i><span>CONFIGURA</span></button>
-    <button id="pauseBtn"><span>PAUSA</span></button>
-    <button id="fsBtn"><span>SCHERMO INTERO</span></button>
-    <small>D diagnostica · T scrivi · W risveglia · R reset · J registrazione</small>
-  </nav>
-  <form id="typeBox"><input placeholder="Scrivi a Axel e premi Invio…" autocomplete="off"></form>
-  <aside id="debug">
-    <div class="dh">VOICE DIAGNOSTICS</div>
-    <dl>
-      <dt>STATO</dt><dd id="debugState">BOOT</dd>
-      <dt>MIC</dt><dd id="debugMic">—</dd>
-      <dt>ASCOLTO</dt><dd id="debugEngine">—</dd>
-      <dt>REC</dt><dd id="debugRec">—</dd>
-      <dt>VOCE</dt><dd id="debugVoice">—</dd>
-      <dt>MENTE</dt><dd id="debugMind">—</dd>
-      <dt>SENTITO</dt><dd id="debugText">—</dd>
-      <dt>NOTE</dt><dd id="debugError">—</dd>
-    </dl>
-  </aside>
-  <script type="module" src="app.js"></script>
-</body>
-</html>
+        <div class="step-head"><b>02</b><div><h3>Voce <em>facoltativo</em></h3><p>Con ElevenLabs Axel ha una voce britannica molto realistica. S
