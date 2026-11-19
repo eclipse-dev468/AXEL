@@ -9,12 +9,14 @@ body{margin:0;background:#000;color:#fff;font-family:system-ui,sans-serif;text-a
 #gate{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;z-index:10}
 #gate b{font-size:60px;letter-spacing:12px}
 #gate span{margin-top:15px;color:#00e5ff;font-size:18px}
-#dopo{display:none;padding:20px;max-width:700px;margin:0 auto}
-h1{font-size:36px;letter-spacing:6px}
-#risposta{font-size:22px;line-height:1.5;min-height:120px;background:#111;border:1px solid #222;border-radius:16px;padding:20px;text-align:left}
+#dopo{display:none;padding:20px;max-width:720px;margin:0 auto}
+h1{font-size:36px;letter-spacing:6px;margin:10px}
+#stato{color:#00ff9d;letter-spacing:1px;font-size:14px;min-height:20px}
+#sentito{color:#aaa;font-size:16px;min-height:22px}
+#risposta{font-size:21px;line-height:1.5;min-height:140px;background:#111;border:1px solid #333;border-radius:16px;padding:20px;text-align:left;white-space:pre-wrap}
 #domanda{width:100%;padding:14px;border-radius:99px;border:1px solid #00e5ff;background:#111;color:#fff;font-size:18px;box-sizing:border-box}
-button{padding:13px 22px;font-size:17px;border-radius:99px;border:0;background:#00e5ff;cursor:pointer;margin:8px;font-weight:700}
-#stato{color:#00ff9d;letter-spacing:2px;font-size:13px}
+button{padding:13px 20px;font-size:16px;border-radius:99px;border:0;background:#00e5ff;cursor:pointer;margin:6px;font-weight:700}
+button.grigio{background:#333;color:#fff}
 </style>
 </head>
 <body>
@@ -22,34 +24,37 @@ button{padding:13px 22px;font-size:17px;border-radius:99px;border:0;background:#
 <div id="gate" onclick="parti()">
 <b>AXEL</b>
 <span>CLICCA QUI PER INIZIALIZZARE</span>
-<p style="opacity:.6">Clicca e parla subito</p>
+<p style="opacity:.6">Clicca, poi parla o scrivi</p>
 </div>
 
 <div id="dopo">
 <h1>AXEL</h1>
-<p id="stato">PRONTO - CHIEDIMI TUTTO</p>
-<div id="risposta">Ciao, sono Axel. Ora sono un vero AI. Chiedimi qualsiasi cosa: cos'è un PC, chi è Napoleone, cos'è un buco nero. Ti rispondo io a voce, non dico più "faccio la ricerca".</div>
+<p id="stato">PRONTO</p>
+<p id="sentito"></p>
+<div id="risposta">Ciao, sono Axel. Ora so TUTTO, non solo 3 domande. Chiedimi qualsiasi cosa: cos'è una sedia, chi è 【entity-Messi¦canonical_name=Messi】, cos'è la fotosintesi, perché il cielo è blu. Ti rispondo io a voce.</div>
 <br>
-<input id="domanda" placeholder="Scrivi qui... es: cos'è un PC? e premi Invio">
+<input id="domanda" placeholder="Scrivi qualsiasi cosa... e premi Invio">
 <br><br>
+<button onclick="ascolta()">🎤 PARLA - PREMI QUI</button>
 <button onclick="provaVoce()">🔊 PROVA VOCE</button>
-<button onclick="ascolta()">🎤 PARLA CON VOCE</button>
-<button onclick="ferma()">⏹ FERMA VOCE</button>
+<button class="grigio" onclick="sbloccaMicrofono()">🔓 SBLOCCA MICROFONO</button>
+<br>
+<p style="opacity:.6;font-size:13px">Se il microfono non va, premi SBLOCCA MICROFONO e poi Consenti in alto.</p>
 </div>
 
 <script>
-let parlando = false;
+let rec = null;
 
 function parti(){
   document.getElementById("gate").style.display = "none";
   document.getElementById("dopo").style.display = "block";
-  parla("Ciao, sono Axel. Ora sono un vero AI che sa tutto. Chiedimi qualsiasi cosa.");
+  parla("Ciao, sono Axel. Ora so tutto. Chiedimi qualsiasi cosa, non solo tre domande.");
 }
 
 function parla(testo){
   document.getElementById("risposta").textContent = testo;
   if(!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
+  try{ window.speechSynthesis.cancel(); }catch(e){}
   var u = new SpeechSynthesisUtterance(testo);
   u.lang = "it-IT";
   u.rate = 0.95;
@@ -58,108 +63,80 @@ function parla(testo){
   if(it) u.voice = it;
   window.speechSynthesis.speak(u);
 }
-function ferma(){ window.speechSynthesis.cancel(); }
-function provaVoce(){ parla("Mi senti? Sono Axel. Ora parlo davvero e so tutto."); }
+function provaVoce(){ parla("Mi senti? Sono Axel. Se mi senti, la voce funziona. Ora prova il microfono."); }
 
-// --- CERVELLO VERO: WIKIPEDIA CHE SA TUTTO ---
-async function cercaSuWikipedia(domanda){
+// --- SBLOCCA MICROFONO VERO ---
+async function sbloccaMicrofono(){
+  document.getElementById("stato").textContent = "CHIEDO PERMESSO MICROFONO...";
   try{
-    // Pulisci la domanda: togli "cos'è", "chi è", ecc e tieni solo la parola
-    var parola = domanda.toLowerCase()
-      .replace(/cos'è/g,"").replace(/cosa è/g,"").replace(/che cos'è/g,"")
-      .replace(/chi è/g,"").replace(/chi era/g,"").replace(/parlami di/g,"")
-      .replace(/dimmi/g,"").replace(/spiegami/g,"").replace(/\?/g,"").trim();
-    if(!parola) parola = domanda;
+    var stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t => t.stop());
+    document.getElementById("stato").textContent = "MICROFONO SBLOCCATO! Ora premi PARLA.";
+    parla("Microfono sbloccato. Ora premi parla e dimmi quello che vuoi.");
+  }catch(e){
+    document.getElementById("stato").textContent = "MICROFONO BLOCCATO DA CHROME";
+    document.getElementById("risposta").textContent = "Chrome ha bloccato il microfono. Fai così: in alto a sinistra, vicino a localhost, clicca il lucchetto, poi Microfono, poi Consenti. Poi ricarica con Ctrl + Shift + R e premi di nuovo SBLOCCA MICROFONO.";
+    parla("Il microfono è bloccato da Chrome. Clicca il lucchetto in alto a sinistra e metti Consenti.");
+  }
+}
 
-    // Wikipedia in italiano, con origin=* così non si blocca
+// --- MICROFONO CHE FUNZIONA ---
+function ascolta(){
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    parla("Il tuo browser non ha il riconoscimento vocale. Usa Chrome. Intanto puoi scrivere la domanda.");
+    return;
+  }
+  document.getElementById("stato").textContent = "TI ASCOLTO... PARLA ORA";
+  document.getElementById("sentito").textContent = "";
+  try{
+    if(rec) try{ rec.stop(); }catch(e){}
+    rec = new SR();
+    rec.lang = "it-IT";
+    rec.interimResults = false;
+    rec.continuous = false;
+    rec.onresult = function(e){
+      var testo = e.results[0][0].transcript;
+      document.getElementById("sentito").textContent = "HO SENTITO: " + testo;
+      document.getElementById("stato").textContent = "HO CAPITO, CERCO...";
+      rispondi(testo);
+    };
+    rec.onerror = function(e){
+      if(e.error === "not-allowed"){
+        document.getElementById("stato").textContent = "MICROFONO BLOCCATO";
+        parla("Microfono bloccato. Premi il pulsante Sblocca Microfono e metti Consenti in alto.");
+      } else if(e.error === "no-speech"){
+        document.getElementById("stato").textContent = "NON TI HO SENTITO, RIPROVA";
+        parla("Non ti ho sentito. Avvicinati e riprova, oppure scrivi.");
+      } else {
+        document.getElementById("stato").textContent = "ERRORE MICROFONO: " + e.error;
+      }
+    };
+    rec.onend = function(){
+      if(document.getElementById("stato").textContent === "TI ASCOLTO... PARLA ORA"){
+        document.getElementById("stato").textContent = "PRONTO";
+      }
+    };
+    rec.start();
+  }catch(e){
+    parla("Errore microfono. Prova a scrivere la domanda.");
+  }
+}
+
+// --- CERVELLO VERO: SA TUTTO, NON SOLO 3 DOMANDE ---
+function pulisciDomanda(d){
+  return d.toLowerCase()
+    .replace(/cos'è/g,"").replace(/cosa è/g,"").replace(/che cos'è/g,"")
+    .replace(/chi è/g,"").replace(/chi era/g,"").replace(/parlami di/g,"")
+    .replace(/dimmi di/g,"").replace(/spiegami/g,"").replace(/cosa significa/g,"")
+    .replace(/perché/g,"").replace(/\?/g,"").replace(/!/g,"").trim() || d;
+}
+
+async function cercaWikipedia(domanda){
+  try{
+    var parola = pulisciDomanda(domanda);
     var url = "https://it.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&origin=*&titles=" + encodeURIComponent(parola);
     var r = await fetch(url);
     var d = await r.json();
     var pages = d.query.pages;
-    var key = Object.keys(pages)[0];
-    var testo = pages[key].extract;
-    if(!testo || testo.length < 20) return null;
-    // Prendi solo le prime 4 frasi, così è lungo ma non infinito
-    var frasi = testo.split(". ");
-    var corto = frasi.slice(0,4).join(". ");
-    if(!corto.endsWith(".")) corto += ".";
-    return corto.slice(0,1200);
-  }catch(e){
-    return null;
-  }
-}
-
-async function cercaOnlineLibero(domanda){
-  try{
-    var r = await fetch("https://text.pollinations.ai/" + encodeURIComponent("Rispondi in italiano, in modo semplice e completo, massimo 5 frasi: " + domanda));
-    if(!r.ok) return null;
-    var t = await r.text();
-    if(t && t.length > 20) return t.slice(0,1200);
-  }catch(e){}
-  return null;
-}
-
-async function rispondi(domanda){
-  if(!domanda) return;
-  document.getElementById("stato").textContent = "STO PENSANDO...";
-  document.getElementById("risposta").textContent = "Aspetta, sto cercando " + domanda + "...";
-
-  var q = domanda.toLowerCase();
-  var risposta = "";
-
-  // Risposte immediate veloci
-  if(q.includes("ciao") || q.includes("buongiorno")) risposta = "Ciao! Sono Axel. Chiedimi tutto quello che vuoi, so rispondere a tutto.";
-  else if(q.includes("chi sei")) risposta = "Sono Axel, il tuo assistente personale. Sono come Jarvis, ma vero. So tutto grazie a Wikipedia e a internet.";
-  else if(q.includes("che ore")) risposta = "Sono le " + new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) + ".";
-  else if(q.includes("che giorno")) risposta = "Oggi è " + new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + ".";
-  else if(q.includes("quanto fa")){
-    try{
-      var expr = domanda.replace(/quanto fa/gi,"").replace(/più/gi,"+").replace(/per/gi,"*").replace(/diviso/gi,"/").replace(/meno/gi,"-");
-      var val = Function("return (" + expr + ")")();
-      risposta = "Fa " + val + ".";
-    }catch(e){ risposta = ""; }
-  }
-
-  // Se non è un comando, CERCA SU WIKIPEDIA E DILLA SUBITO
-  if(!risposta){
-    risposta = await cercaSuWikipedia(domanda);
-  }
-  if(!risposta){
-    risposta = await cercaOnlineLibero(domanda);
-  }
-  if(!risposta){
-    risposta = "Non ho trovato " + domanda + " con quel nome. Prova a chiedermelo così: cos'è un PC, chi è Napoleone, cos'è un buco nero. Così lo trovo sicuro su Wikipedia.";
-  }
-
-  document.getElementById("stato").textContent = "PRONTO - CHIEDIMI TUTTO";
-  parla(risposta);
-}
-
-// Invio con tastiera
-document.getElementById("domanda").addEventListener("keydown", function(e){
-  if(e.key === "Enter"){
-    var v = e.target.value;
-    e.target.value = "";
-    rispondi(v);
-  }
-});
-
-// Microfono
-function ascolta(){
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ parla("Usa Chrome per parlare. Oppure scrivi la domanda."); return; }
-  var rec = new SR();
-  rec.lang = "it-IT";
-  rec.onresult = function(e){ rispondi(e.results[0][0].transcript); };
-  rec.onerror = function(){ parla("Non ti ho sentito. Riprova, oppure scrivi."); };
-  rec.start();
-  document.getElementById("stato").textContent = "TI ASCOLTO... PARLA";
-}
-
-// Carica voci italiane
-if("speechSynthesis" in window){
-  window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.getVoices(); };
-}
-</script>
-</body>
-</html>
+    var key = Object
