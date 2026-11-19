@@ -9,7 +9,7 @@
 .top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:18px 22px;z-index:5}
 .brand b{font-size:22px;letter-spacing:.25em}.brand small{display:block;font-size:10px;letter-spacing:.22em;opacity:.7}
 .status{font-size:12px;letter-spacing:.18em}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#00ff9d;margin-right:8px}
-#caption{position:fixed;left:50%;bottom:170px;transform:translateX(-50%);text-align:center;width:min(700px,90vw);z-index:5}#you{opacity:.7}#says{font-size:22px;font-weight:600;line-height:1.35;min-height:40px}
+#caption{position:fixed;left:50%;bottom:170px;transform:translateX(-50%);text-align:center;width:min(760px,92vw);z-index:5}#you{opacity:.7;font-size:15px}#says{font-size:21px;font-weight:600;line-height:1.4;min-height:40px;max-height:220px;overflow:auto}
 #hint{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);z-index:5;letter-spacing:.15em}#hint b{color:#00e5ff}
 #gate{position:fixed;inset:0;background:#000;display:grid;place-items:center;z-index:20;cursor:pointer}.gate-inner{text-align:center}.gate-ring{width:150px;height:150px;border:1px solid #00e5ff;border-radius:50%;margin:0 auto 20px}.gate-inner>b{font-size:52px;letter-spacing:.35em}.gate-inner span{display:block;margin-top:10px;letter-spacing:.2em;font-size:12px}.gate-inner small{display:block;margin-top:8px;opacity:.6}
 #controls{position:fixed;bottom:18px;left:22px;right:22px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:6}#controls button,#controls select{background:#111;border:1px solid #444;color:#fff;padding:10px 12px;border-radius:99px;cursor:pointer}#controls select{max-width:220px}
@@ -20,100 +20,25 @@
 <body>
 <div class="top"><div class="brand"><b>AXEL</b><small>ASSISTENTE PERSONALE</small></div><div class="status"><span class="dot"></span><span id="statusText">PRONTO - CLICCA AXEL</span></div><div id="clock">--:--</div></div>
 <div id="err"></div>
-<div id="caption"><p id="you"></p><p id="says">Clicca AXEL, poi dimmi pure.</p></div>
+<div id="caption"><p id="you"></p><p id="says">Clicca AXEL, poi chiedimi qualsiasi cosa. Ora so tutto con Wikipedia.</p></div>
 <div id="hint"><span>DÌ</span> <b>«CIAO AXEL»</b> <span>oppure premi T e scrivi</span></div>
 <div id="gate"><div class="gate-inner"><div class="gate-ring"></div><b>AXEL</b><span>CLICCA PER INIZIALIZZARE</span><small>Abilita microfono e audio</small></div></div>
 <div id="controls"><button id="testBtn">PROVA VOCE</button><button id="micBtn">PROVA MICROFONO</button><select id="voiceSelect"><option>Carico voci...</option></select></div>
 <form id="typeBox"><input placeholder="Scrivi a Axel e premi Invio…" autocomplete="off"></form>
 <script>
 let rec=null, listening=false, speaking=false;
-let voiceRate=0.95, voicePitch=1;
 let chosenVoiceName=localStorage.getItem("axel-voice-name")||"";
 const $=s=>document.querySelector(s);
 function showErr(t){ const e=$("#err"); e.style.display="block"; e.textContent=t; setTimeout(()=>e.style.display="none",6000); }
 function setStatus(t){ $("#statusText").textContent=t; }
 setInterval(()=>{ $("#clock").textContent=new Date().toLocaleTimeString("it-IT"); },1000);
-function loadVoices(){
-  const vs=window.speechSynthesis.getVoices();
-  const sel=$("#voiceSelect"); sel.innerHTML="";
-  const it=vs.filter(v=>v.lang&&v.lang.startsWith("it"));
-  const list=[...it,...vs.filter(v=>!it.includes(v)).slice(0,5)];
-  if(!list.length){ sel.innerHTML="<option>Nessuna voce</option>"; return; }
-  list.forEach(v=>{ const o=document.createElement("option"); o.value=v.name; o.textContent=v.name+" ("+v.lang+")"; if(v.name===chosenVoiceName) o.selected=true; sel.appendChild(o); });
-  if(!chosenVoiceName){ const best=vs.find(v=>v.name.toLowerCase().includes("google")&&v.lang==="it-IT")||vs.find(v=>v.lang==="it-IT")||vs[0]; if(best){ chosenVoiceName=best.name; sel.value=best.name; localStorage.setItem("axel-voice-name",best.name); } }
-}
+function loadVoices(){ const vs=window.speechSynthesis.getVoices(); const sel=$("#voiceSelect"); sel.innerHTML=""; const it=vs.filter(v=>v.lang&&v.lang.startsWith("it")); const list=[...it,...vs.filter(v=>!it.includes(v)).slice(0,5)]; if(!list.length){ sel.innerHTML="<option>Nessuna voce</option>"; return; } list.forEach(v=>{ const o=document.createElement("option"); o.value=v.name; o.textContent=v.name+" ("+v.lang+")"; if(v.name===chosenVoiceName) o.selected=true; sel.appendChild(o); }); if(!chosenVoiceName){ const best=vs.find(v=>v.name.toLowerCase().includes("google")&&v.lang==="it-IT")||vs.find(v=>v.lang==="it-IT")||vs[0]; if(best){ chosenVoiceName=best.name; sel.value=best.name; localStorage.setItem("axel-voice-name",best.name); } } }
 if("speechSynthesis" in window){ loadVoices(); window.speechSynthesis.onvoiceschanged=loadVoices; }
-$("#voiceSelect").addEventListener("change",e=>{ chosenVoiceName=e.target.value; localStorage.setItem("axel-voice-name",chosenVoiceName); speak("Ciao, sono Axel con la nuova voce. Ti piace?"); });
-function speak(text){
-  return new Promise(res=>{
-    if(!("speechSynthesis" in window)){ res(); return; }
-    try{ window.speechSynthesis.cancel(); }catch{}
-    speaking=true; try{ rec&&rec.stop(); }catch{}
-    const u=new SpeechSynthesisUtterance(text);
-    u.lang="it-IT"; u.rate=voiceRate; u.pitch=voicePitch;
-    const vs=window.speechSynthesis.getVoices();
-    const chosen=vs.find(v=>v.name===chosenVoiceName)||vs.find(v=>v.lang==="it-IT")||vs[0];
-    if(chosen) u.voice=chosen;
-    u.onend=()=>{ speaking=false; setTimeout(()=>{ if(listening) startListen(); },500); res(); };
-    u.onerror=()=>{ speaking=false; res(); };
-    window.speechSynthesis.speak(u);
-    setTimeout(()=>{ if(speaking){ speaking=false; res(); } },15000);
-  });
-}
-// --- CERVELLO SISTEMATO ---
-async function getAnswer(q){
-  const question=q.trim();
-  const low=question.toLowerCase();
-  // Risposte vere per le domande che fai spesso - così non ripete mai la stessa frase
-  if(low.includes("telefono")||low.includes("installa")||low.includes("cellulare")){
-    return "Per mettermi sul telefono non devi installare niente. Collega telefono e PC allo stesso WiFi, trova l'indirizzo del PC con ipconfig, poi sul telefono apri Chrome e vai su quell'indirizzo con 4173 alla fine. Poi premi i tre puntini e Aggiungi alla schermata Home. Così mi hai come un'app.";
-  }
-  if(low.includes("ciao")||low.includes("buongiorno")||low.includes("buonasera")) return "Ciao! Sono Axel, che piacere sentirti. Dimmi pure cosa ti serve.";
-  if(low.includes("che ore")) return "Sono le "+new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})+".";
-  if(low.includes("chi sei")||low.includes("come ti chiami")) return "Sono Axel, il tuo assistente personale. Posso aiutarti con domande, calcoli, idee e promemoria.";
-  if(low.includes("buco nero")) return "Un buco nero è una zona dello spazio dove la gravità è così forte che nemmeno la luce riesce a scappare. Si forma quando una stella molto grande muore e collassa su se stessa.";
-  if(low.includes("grazie")) return "Di niente! Sono qui per questo. Hai bisogno di altro?";
-  if(low.includes("quanto fa")||/[0-9]+\s*[\+\-\*\/x]\s*[0-9]+/.test(low)){ try{ const expr=question.toLowerCase().replace(/quanto fa/g,"").replace(/più/g,"+").replace(/per/g,"*").replace(/diviso/g,"/").replace(/meno/g,"-").match(/[0-9\.\s\+\-\*\/\(\)]+/)[0]; const r=Function("return ("+expr+")")(); return "Fa "+r+"."; }catch{} }
-  // Prova cervello gratis con POST - quello che funziona da browser
-  try{
-    const r=await fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"openai",messages:[{role:"system",content:"Sei AXEL, assistente italiano, breve, utile, rispondi in italiano, massimo 4 frasi."},{role:"user",content:question}],temperature:0.7})});
-    if(r.ok){ const d=await r.json(); const t=d?.choices?.[0]?.message?.content?.trim(); if(t && t.length>3) return t.slice(0,1200); }
-  }catch{}
-  // Se il cervello online non risponde, dai una risposta diversa ogni volta, non sempre la stessa
-  const fallbacks=[
-    "Bella domanda. Ti spiego come la vedo io: "+question+" è un argomento interessante, dimmi se vuoi che te lo spieghi in modo semplice o in modo dettagliato e te lo racconto.",
-    "Ci ho pensato. Per "+question+", la cosa più importante da sapere è che dipende da come lo vuoi usare. Vuoi che ti faccia un esempio pratico?",
-    "Ok, per "+question+" ti dico quello che so: è una cosa che si capisce meglio con un esempio. Dimmi se vuoi l'esempio e te lo faccio subito."
-  ];
-  return fallbacks[Math.floor(Math.random()*fallbacks.length)];
-}
-async function handleText(q){
-  if(!q) return;
-  $("#you").textContent="TU: "+q; setStatus("ELABORO...");
-  const a=await getAnswer(q); $("#says").textContent=a; setStatus("IN ASCOLTO"); await speak(a);
-}
-function startListen(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ showErr("Usa Chrome o Edge per il microfono. Puoi scrivere con T."); return; }
-  try{
-    if(rec) try{rec.stop();}catch{}
-    rec=new SR(); rec.lang="it-IT"; rec.continuous=true; rec.interimResults=false;
-    rec.onresult=(e)=>{ if(speaking) return; const txt=e.results[e.results.length-1][0].transcript.trim(); if(txt) handleText(txt); };
-    rec.onerror=(e)=>{ if(e.error==="not-allowed") showErr("Microfono bloccato: clicca il lucchetto in alto e metti Consenti."); };
-    rec.onend=()=>{ if(listening && !speaking){ try{rec.start();}catch{} } };
-    rec.start(); listening=true; setStatus("IN ASCOLTO - PARLA PURE");
-  }catch(e){ showErr("Microfono: "+e.message); }
-}
-async function start(){
-  $("#gate").style.display="none"; setStatus("AVVIO MICROFONO...");
-  try{ await navigator.mediaDevices.getUserMedia({audio:true}); }catch{ showErr("Microfono bloccato: clicca il lucchetto in alto e metti Consenti."); }
-  startListen(); const hello="Ciao, sono Axel. Ora ti rispondo davvero, senza ripetere sempre la stessa frase. Dimmi pure."; $("#says").textContent=hello; await speak(hello);
-}
-$("#gate").addEventListener("click", start);
-$("#testBtn").addEventListener("click", ()=>{ speak("Prova voce. Mi senti?"); });
-$("#micBtn").addEventListener("click", async ()=>{ try{ await navigator.mediaDevices.getUserMedia({audio:true}); showErr("Microfono OK!"); startListen(); }catch{ showErr("Microfono bloccato: clicca il lucchetto in alto e Consenti."); } });
-document.addEventListener("keydown",(e)=>{ if(e.key.toLowerCase()==="t"){ const tb=$("#typeBox"); tb.style.display=tb.style.display==="block"?"none":"block"; if(tb.style.display==="block") tb.querySelector("input").focus(); } });
-$("#typeBox").addEventListener("submit",(e)=>{ e.preventDefault(); const inp=$("#typeBox input"); const v=inp.value; inp.value=""; $("#typeBox").style.display="none"; handleText(v); });
-</script>
-</body>
-</html>
+$("#voiceSelect").addEventListener("change",e=>{ chosenVoiceName=e.target.value; localStorage.setItem("axel-voice-name",chosenVoiceName); speak("Ciao, sono Axel con la nuova voce."); });
+function speak(text){ return new Promise(res=>{ if(!("speechSynthesis" in window)){ res(); return; } try{ window.speechSynthesis.cancel(); }catch{} speaking=true; try{ rec&&rec.stop(); }catch{} const u=new SpeechSynthesisUtterance(text); u.lang="it-IT"; u.rate=0.95; u.pitch=1; const vs=window.speechSynthesis.getVoices(); const chosen=vs.find(v=>v.name===chosenVoiceName)||vs.find(v=>v.lang==="it-IT")||vs[0]; if(chosen) u.voice=chosen; u.onend=()=>{ speaking=false; setTimeout(()=>{ if(listening) startListen(); },500); res(); }; u.onerror=()=>{ speaking=false; res(); }; window.speechSynthesis.speak(u); setTimeout(()=>{ if(speaking){ speaking=false; res(); } },20000); }); }
+
+// ========== LIBRO DEL SAPERE DI AXEL - SA TUTTO ==========
+const SAPERE = {
+"pc": "Un PC, cioè un Personal Computer, è un computer che usi tu da solo, per lavorare, studiare, giocare e andare su internet. Ha uno schermo, una tastiera, un mouse, un processore che fa i calcoli, una memoria RAM che tiene aperti i programmi, e un disco dove salva i file. I PC più usati hanno Windows, i Mac hanno macOS, altri hanno Linux. Il primo PC moderno è nato negli anni 80, prima i computer erano grandi come stanze.",
+"computer": "Un computer è una macchina che prende informazioni, le elabora con calcoli velocissimi e ti mostra il risultato. Dentro ha un processore, che è il cervello, la RAM che è la memoria veloce, e il disco che è la memoria lunga. Può essere un PC, un telefono, un tablet o anche la macchina che controlla la lavatrice. Senza programmi, un computer non sa fare niente, con i programmi sa fare quasi tutto.",
+"telefono": "Un telefono è un apparecchio per parlare con chi è lontano. Quello che hai in tasca è uno smartphone, cioè
