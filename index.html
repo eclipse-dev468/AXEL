@@ -13,9 +13,8 @@ h1{font-size:32px;letter-spacing:6px;margin:8px}
 #stato{font-size:16px;min-height:22px;color:#888}
 #stato.sveglio{color:#00e5ff}
 #live{font-size:17px;color:#ffcc00;min-height:24px;background:#1a1a00;border:1px solid #333;border-radius:10px;padding:8px;margin:8px 0}
-#micBox{background:#111;border:1px solid #333;border-radius:12px;padding:12px;margin:10px 0;text-align:left}
-#micBarraBg{background:#333;height:22px;border-radius:99px;overflow:hidden}
-#micBarra{background:#00ff9d;height:100%;width:0%}
+#chiaveBox{background:#111;border:1px solid #00e5ff;border-radius:12px;padding:12px;margin:10px 0;text-align:left}
+#chiaveInput{width:100%;padding:12px;border-radius:99px;border:1px solid #555;background:#000;color:#fff;box-sizing:border-box}
 #log{background:#0a0a0a;border:1px solid #222;border-radius:12px;padding:12px;text-align:left;font-size:14px;min-height:70px;max-height:120px;overflow:auto;color:#aaa}
 #risposta{font-size:21px;line-height:1.5;min-height:130px;background:#111;border:1px solid #333;border-radius:16px;padding:18px;text-align:left;white-space:pre-wrap;margin-top:10px}
 #domanda{width:100%;padding:14px;border-radius:99px;border:1px solid #00e5ff;background:#111;color:#fff;font-size:18px;box-sizing:border-box}
@@ -27,28 +26,32 @@ button.grigio{background:#333;color:#fff}
 <body>
 
 <div id="dopo">
-<h1>AXEL</h1>
+<h1>AXEL - CERVELLO OPENAI</h1>
 <div id="cerchio">🎤</div>
 <p id="stato">PARTO DA SOLO...</p>
-<div id="micBox">
-<b>🎤 MICROFONO</b>
-<div id="micBarraBg"><div id="micBarra"></div></div>
-<p style="font-size:13px;color:#aaa">Se usi le cuffie, sente molto meglio.</p>
+
+<div id="chiaveBox">
+<b>🔑 CHIAVE OPENAI - QUELLA CHE HAI APPENA CREATO</b>
+<p style="font-size:13px;color:#aaa">Incolla qui la chiave che inizia con sk- che hai copiato da OpenAI → Premi Salva. La ricordo io, non la devi più mettere.</p>
+<input id="chiaveInput" placeholder="Incolla qui la chiave sk-...">
+<br><br>
+<button onclick="salvaChiave()">💾 SALVA CHIAVE OPENAI</button>
+<span id="chiaveStato" style="font-size:13px;color:#ffcc00"></span>
 </div>
+
 <div id="live">Sto per partire...</div>
 <div id="log">LOG:<br>• Avvio...</div>
-<div id="risposta">Ciao signore. Ora il cervello non dice più "occupato". Se il cervello online non va, ti rispondo con Wikipedia e con il mio cervello locale.</div>
+<div id="risposta">Ciao signore. Ora uso OpenAI, quella di ChatGPT. Metti la chiave sopra una volta sola e ti rispondo davvero a tutto.</div>
 <br>
-<input id="domanda" placeholder="Scrivi qui... e premi Invio - prova anche senza voce">
+<input id="domanda" placeholder="Scrivi qui... e premi Invio">
 <br><br>
-<button onclick="faiAltraDomanda()">🔄 FAMMI FARE UN'ALTRA DOMANDA</button>
-<button class="grigio" onclick="testCervello()">🧪 PROVA CERVELLO ADESSO</button>
+<button onclick="testCervello()">🧪 PROVA CERVELLO OPENAI</button>
+<button class="grigio" onclick="sbloccaMicrofono()">🔓 SBLOCCA MICROFONO</button>
 </div>
 
 <script>
 let streamMicrofono = null;
 let staParlando = false;
-let audioCtx = null, analyser = null;
 let inTurno = false;
 
 function log(t){
@@ -60,6 +63,37 @@ function setStato(testo, classe){
   var s = document.getElementById("stato");
   s.textContent = testo;
   s.className = classe || "";
+}
+function getChiave(){
+  return localStorage.getItem("axel-openai-key") || "";
+}
+function mostraStatoChiave(){
+  var k = getChiave();
+  var el = document.getElementById("chiaveStato");
+  var inp = document.getElementById("chiaveInput");
+  if(k){
+    el.textContent = "✅ Chiave OpenAI salvata! Cervello serio attivo.";
+    el.style.color = "#00ff9d";
+    inp.value = k.slice(0,6) + "..." + k.slice(-4);
+  } else {
+    el.textContent = "❌ Nessuna chiave - incolla quella sk- che hai copiato";
+    el.style.color = "#ffcc00";
+  }
+}
+function salvaChiave(){
+  var v = document.getElementById("chiaveInput").value.trim();
+  if(!v || v.length < 20){
+    document.getElementById("chiaveStato").textContent = "Incolla la chiave vera, quella lunga che inizia con sk-";
+    return;
+  }
+  if(v.includes("...")){
+    document.getElementById("chiaveStato").textContent = "Incolla la chiave intera, non quella con i puntini. Copiala di nuovo da OpenAI";
+    return;
+  }
+  localStorage.setItem("axel-openai-key", v);
+  mostraStatoChiave();
+  log("Chiave OpenAI salvata");
+  parla("Chiave OpenAI salvata signore. Ora ho il cervello di ChatGPT. Prova a farmi una domanda.");
 }
 function mutaMicrofono(muta){
   if(!streamMicrofono) return;
@@ -94,29 +128,8 @@ async function tieniMicrofonoAperto(){
   try{
     if(streamMicrofono) return true;
     streamMicrofono = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
-    log("Microfono aperto");
     return true;
-  }catch(e){ log("Microfono bloccato"); return false; }
-}
-function avviaBarra(){
-  if(!streamMicrofono || audioCtx) return;
-  try{
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    var src = audioCtx.createMediaStreamSource(streamMicrofono);
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 512;
-    src.connect(analyser);
-    var dati = new Uint8Array(analyser.frequencyBinCount);
-    function agg(){
-      analyser.getByteFrequencyData(dati);
-      var somma = 0;
-      for(var i=0;i<dati.length;i++) somma += dati[i];
-      var perc = Math.min(100, (somma / dati.length) * 2);
-      document.getElementById("micBarra").style.width = perc + "%";
-      requestAnimationFrame(agg);
-    }
-    agg();
-  }catch(e){}
+  }catch(e){ return false; }
 }
 function ascoltaUnaVolta(secondi){
   return new Promise(function(res){
@@ -146,7 +159,7 @@ function ascoltaUnaVolta(secondi){
       if(mostra) document.getElementById("live").textContent = "STO SENTENDO: " + mostra;
       if(finale.trim()) finisci(finale.trim());
     };
-    rec.onerror = function(e){ log("Errore ascolto: " + e.error); finisci(""); };
+    rec.onerror = function(e){ finisci(""); };
     rec.onend = function(){ finisci(""); };
     try{ rec.start(); }catch(e){ finisci(""); }
   });
@@ -157,173 +170,109 @@ async function cicloAxel(){
   while(true){
     try{
       setStato('DORMO... DI\' "AXEL"', "");
-      document.getElementById("live").textContent = "Dormo... dimmi Axel";
       var sveglia = await ascoltaUnaVolta(10);
-      var bassoSveglia = (sveglia || "").toLowerCase();
-      var haDettoAxel = bassoSveglia.includes("axel") || bassoSveglia.includes("accel") || bassoSveglia.includes("exel") || bassoSveglia.includes("axl");
-      if(!haDettoAxel) continue;
-      log("!!! AXEL RILEVATO !!!");
+      var basso = (sveglia || "").toLowerCase();
+      if(!(basso.includes("axel") || basso.includes("accel") || basso.includes("exel"))) continue;
+      log("AXEL rilevato");
       setStato("SONO SVEGLIO - DIMMI LA DOMANDA", "sveglio");
       await parla("Dimmi signore, ti ascolto.");
-      setStato("TI ASCOLTO - FAMMI LA DOMANDA", "sveglio");
       var domanda = await ascoltaUnaVolta(10);
-      domanda = (domanda || "").replace(/axel/gi,"").replace(/accel/gi,"").trim();
-      if(!domanda){ continue; }
+      domanda = (domanda || "").replace(/axel/gi,"").trim();
+      if(!domanda) continue;
       setStato("STO PENSANDO...", "sveglio");
       var risposta = await pensa(domanda);
       await parla(risposta);
-      setStato("ANCORA SVEGLIO - UN'ALTRA DOMANDA SENZA DIRE AXEL", "sveglio");
+      setStato("ANCORA SVEGLIO - UN'ALTRA SENZA DIRE AXEL", "sveglio");
       var domanda2 = await ascoltaUnaVolta(10);
-      domanda2 = (domanda2 || "").replace(/axel/gi,"").replace(/accel/gi,"").trim();
+      domanda2 = (domanda2 || "").replace(/axel/gi,"").trim();
       if(domanda2){
         var risposta2 = await pensa(domanda2);
         await parla(risposta2);
-        setStato("ANCORA SVEGLIO - UN'ALTRA?", "sveglio");
-        var domanda3 = await ascoltaUnaVolta(10);
-        domanda3 = (domanda3 || "").replace(/axel/gi,"").replace(/accel/gi,"").trim();
-        if(domanda3){
-          var risposta3 = await pensa(domanda3);
-          await parla(risposta3);
-        }
       }
     }catch(e){
-      log("Errore ciclo, riparto: " + e.message);
       await new Promise(function(r){ setTimeout(r, 1000); });
     }
   }
 }
-function faiAltraDomanda(){
-  parla("Ok signore, sono qui. Dimmi di nuovo Axel e fammi la domanda.");
-}
 async function testCervello(){
-  log("TEST CERVELLO: provo a pensare a una domanda...");
-  setStato("TEST CERVELLO...", "sveglio");
-  var r = await pensa("cos'è un computer?");
-  log("Risposta test pronta, lunghezza: " + r.length);
+  log("TEST cervello OpenAI...");
+  var r = await pensa("cos'è un computer? Spiegamelo in modo semplice.");
   parla(r);
 }
-
-// ===== CERVELLO NUOVO - MAI PIÙ "OCCUPATO" =====
-async function cervelloOnlineGET(domanda){
-  // Metodo semplice GET - quello che funziona sempre, senza POST che si blocca
+async function sbloccaMicrofono(){
+  var ok = await tieniMicrofonoAperto();
+  if(ok) parla("Microfono sbloccato signore.");
+}
+async function cervelloOpenAI(domanda){
+  var chiave = getChiave();
+  if(!chiave) return null;
   try{
-    log("Cervello online GET: provo...");
-    var prompt = "Sei AXEL, assistente italiano intelligente, sai tutto. Rispondi in italiano, semplice, 5 frasi, chiamalo solo signore. Domanda: " + domanda;
-    var url = "https://text.pollinations.ai/" + encodeURIComponent(prompt);
-    var controller = new AbortController();
-    var timeout = setTimeout(function(){ controller.abort(); }, 10000);
-    var r = await fetch(url, {signal: controller.signal});
-    clearTimeout(timeout);
-    log("Cervello GET: status " + r.status);
-    if(!r.ok) return null;
-    var t = await r.text();
-    if(t && t.length > 20 && !t.toLowerCase().includes("rate limit") && !t.toLowerCase().includes("too many")){
-      log("Cervello GET: OK, risposta ricevuta");
-      return t.slice(0,1500);
+    log("OpenAI: mando la domanda...");
+    var r = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {"Content-Type": "application/json", "Authorization": "Bearer " + chiave},
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {role: "system", content: "Sei AXEL, assistente personale italiano come Jarvis. Sai tutto. Rispondi in italiano, semplice, max 6 frasi. Chiamalo sempre e solo signore."},
+          {role: "user", content: domanda}
+        ],
+        temperature: 0.7,
+        max_tokens: 600
+      })
+    });
+    log("OpenAI: status " + r.status);
+    if(!r.ok){
+      var err = await r.text();
+      log("OpenAI errore: " + err.slice(0,250));
+      if(r.status === 401) return "Signore, la chiave non è giusta. Copiala di nuovo tutta da OpenAI, deve iniziare con sk-.";
+      if(r.status === 429) return "Signore, hai finito il credito. Devi mettere 5 euro su platform.openai.com / Billing per continuare.";
+      if(r.status === 402 || err.includes("insufficient_quota")) return "Signore, devi mettere credito su OpenAI. Vai su platform.openai.com, in alto a destra Billing, e metti 5 euro. Poi funziona.";
+      return null;
     }
-    log("Cervello GET: risposta vuota o limitata");
+    var d = await r.json();
+    var testo = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    if(testo){
+      log("OpenAI: risposta ricevuta, " + testo.length + " caratteri");
+      return testo.trim().slice(0,1500);
+    }
     return null;
   }catch(e){
-    log("Cervello GET: errore " + e.message + " - provo Wikipedia");
+    log("OpenAI errore rete: " + e.message);
     return null;
   }
 }
-
-async function cervelloWikipedia(domanda){
-  try{
-    log("Wikipedia: cerco...");
-    var parola = domanda.toLowerCase().replace(/cos'è/g,"").replace(/cosa è/g,"").replace(/che cos'è/g,"").replace(/chi è/g,"").replace(/chi era/g,"").replace(/parlami di/g,"").replace(/dimmi/g,"").replace(/spiegami/g,"").replace(/\?/g,"").trim() || domanda;
-    var url = "https://it.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&origin=*&titles=" + encodeURIComponent(parola);
-    var r = await fetch(url);
-    if(!r.ok) return null;
-    var d = await r.json();
-    var pages = d.query.pages;
-    var key = Object.keys(pages)[0];
-    var testo = pages[key].extract;
-    if(!testo || testo.length < 30) return null;
-    log("Wikipedia: trovato!");
-    return testo.split(". ").slice(0,5).join(". ") + ".";
-  }catch(e){
-    log("Wikipedia: errore " + e.message);
-    return null;
-  }
-}
-
-async function cervelloDuck(domanda){
-  try{
-    log("DuckDuckGo: provo...");
-    var url = "https://api.duckduckgo.com/?q=" + encodeURIComponent(domanda) + "&format=json&no_html=1&skip_disambig=1";
-    var r = await fetch(url);
-    if(!r.ok) return null;
-    var d = await r.json();
-    if(d.AbstractText) { log("DuckDuckGo: trovato"); return d.AbstractText.slice(0,1000); }
-    if(d.RelatedTopics && d.RelatedTopics[0] && d.RelatedTopics[0].Text) return d.RelatedTopics[0].Text.slice(0,1000);
-  }catch(e){}
-  return null;
-}
-
-// Cervello locale - risponde sempre, anche senza internet, come faccio io quando ragiono
-function cervelloLocale(domanda){
-  var q = domanda.toLowerCase();
-  var argomento = domanda.replace(/cos'è|cosa è|che cos'è|chi è|chi era|parlami di|dimmi|spiegami|perché|come|quando|\?/gi,"").trim() || domanda;
-  if(q.includes("perché") || q.includes("perche")){
-    return "Signore, per " + argomento + " ci sono più motivi. Il motivo principale è che tutto ha una causa: niente succede per caso. Se vuoi, dimmelo in modo più preciso, tipo perché il cielo è blu, e te lo spiego passo passo.";
-  }
-  if(q.includes("come si fa") || q.includes("come fare")){
-    return "Signore, per " + argomento + " si fa così: prima si capisce cosa serve, poi si fa un passo alla volta, senza fretta, e si controlla se funziona. Se mi dici cosa vuoi fare di preciso, ti faccio la lista passo passo.";
-  }
-  if(q.includes("chi è") || q.includes("chi era")){
-    return "Signore, " + argomento + " è una persona di cui si parla tanto. Se mi dici il nome completo, ti racconto chi era, cosa ha fatto e perché è famoso. Prova a dirmi nome e cognome.";
-  }
-  if(q.includes("cos'è") || q.includes("cosa è") || q.includes("che cos'è")){
-    return "Signore, " + argomento + " è una cosa che si capisce meglio con un esempio. È qualcosa che usiamo o vediamo nella vita di tutti i giorni. Se mi dici dove l'hai sentita, ti spiego a cosa serve e come funziona, con parole semplici.";
-  }
-  if(q.includes("quanto") || q.includes("quanti")){
-    return "Signore, per " + domanda + " dipende da come lo misuri. Se mi dici i numeri, te lo calcolo io subito. Per esempio dimmi: quanto fa 12 per 8, e te lo dico.";
-  }
-  // Risposta generica ma vera, come faccio io: non dico "non so", ragiono
-  return "Signore, bella domanda: " + domanda + ". Ti dico quello che so: è un argomento che si capisce meglio partendo dalle basi. Dimmi se vuoi che te lo spieghi in modo semplice, con un esempio, o in modo dettagliato, e te lo spiego subito.";
-}
-
 async function pensa(domanda){
   var q = domanda.toLowerCase();
   if(q.includes("che ore")) return "Sono le " + new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) + ", signore.";
   if(q.includes("che giorno")) return "Oggi è " + new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + ", signore.";
-  if(q.includes("ciao")) return "Ciao signore, dimmi pure. Sono qui.";
+  if(q.includes("ciao")) return "Ciao signore, dimmi pure.";
   if(q.includes("quanto fa")){
     try{
       var expr = domanda.replace(/quanto fa/gi,"").replace(/più/gi,"+").replace(/per/gi,"*").replace(/diviso/gi,"/").replace(/meno/gi,"-").replace(/x/gi,"*");
       return "Fa " + Function("return (" + expr + ")")() + ", signore.";
     }catch(e){}
   }
-
-  // Provo in ordine, e non mi fermo mai a "occupato"
-  var r = await cervelloOnlineGET(domanda);
+  var r = await cervelloOpenAI(domanda);
   if(r) return r;
-  r = await cervelloWikipedia(domanda);
-  if(r) return r;
-  r = await cervelloDuck(domanda);
-  if(r) return r;
-  // Ultima risorsa: cervello locale, risponde sempre
-  log("Uso cervello locale - rispondo lo stesso");
-  return cervelloLocale(domanda);
+  if(!getChiave()){
+    return "Signore, metti la chiave OpenAI sopra che hai copiato, quella sk-, e premi Salva. Poi ti rispondo a tutto.";
+  }
+  return "Signore, OpenAI non ha risposto. Controlla la chiave sopra o controlla se hai credito su OpenAI.";
 }
-
 window.addEventListener("load", async function(){
-  log("Avvio...");
+  mostraStatoChiave();
+  log("Avvio OpenAI...");
   var ok = await tieniMicrofonoAperto();
   if(ok){
-    avviaBarra();
-    await parla("Ciao signore. Ora il cervello non dice più occupato. Se quello online non va, ti rispondo lo stesso.");
+    await parla("Ciao, sono il tuo assistente personale! Fammi qualsiasi domanda.");
     cicloAxel();
   }
 });
-
 document.getElementById("domanda").addEventListener("keydown", async function(e){
   if(e.key === "Enter"){
     var v = e.target.value;
     e.target.value = "";
-    log("Hai scritto: " + v);
     var r = await pensa(v);
     parla(r);
   }
@@ -332,7 +281,6 @@ if("speechSynthesis" in window){
   window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.getVoices(); };
 }
 </script>
-
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
