@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<【entity-meta¦canonical_name=Meta】 charset="UTF-8">
+<【entity-meta¦canonical_name=Meta】 name="viewport" content="width=device-width,initial-scale=1">
 <title>AXEL</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#000000">
@@ -13,7 +13,7 @@ h1{font-size:32px;letter-spacing:6px;margin:8px}
 #stato{font-size:16px;min-height:22px;color:#888}
 #stato.sveglio{color:#00e5ff}
 #live{font-size:17px;color:#ffcc00;min-height:24px;background:#1a1a00;border:1px solid #333;border-radius:10px;padding:8px;margin:8px 0}
-#chiaveBox{background:#111;border:1px solid #00e5ff;border-radius:12px;padding:12px;margin:10px 0;text-align:left}
+#chiaveBox{background:#111;border:1px solid #00ff9d;border-radius:12px;padding:12px;margin:10px 0;text-align:left}
 #chiaveInput{width:100%;padding:12px;border-radius:99px;border:1px solid #555;background:#000;color:#fff;box-sizing:border-box}
 #log{background:#0a0a0a;border:1px solid #222;border-radius:12px;padding:12px;text-align:left;font-size:14px;min-height:70px;max-height:120px;overflow:auto;color:#aaa}
 #risposta{font-size:21px;line-height:1.5;min-height:130px;background:#111;border:1px solid #333;border-radius:16px;padding:18px;text-align:left;white-space:pre-wrap;margin-top:10px}
@@ -26,26 +26,26 @@ button.grigio{background:#333;color:#fff}
 <body>
 
 <div id="dopo">
-<h1>AXEL - CERVELLO OPENAI</h1>
+<h1>AXEL - GRATIS</h1>
 <div id="cerchio">🎤</div>
 <p id="stato">PARTO DA SOLO...</p>
 
 <div id="chiaveBox">
-<b>🔑 CHIAVE OPENAI - QUELLA CHE HAI APPENA CREATO</b>
-<p style="font-size:13px;color:#aaa">Incolla qui la chiave che inizia con sk- che hai copiato da OpenAI → Premi Salva. La ricordo io, non la devi più mettere.</p>
-<input id="chiaveInput" placeholder="Incolla qui la chiave sk-...">
+<b>🔑 CHIAVE GRATIS GROQ - UNA VOLTA SOLA</b>
+<p style="font-size:13px;color:#aaa">Vai su <b>console.groq.com</b> → Accedi con Google → API Keys → Create API Key → Copia la chiave gsk_ → Incolla QUI sotto, non su GitHub → Salva. Gratis, senza carta.</p>
+<input id="chiaveInput" placeholder="Incolla qui la chiave gsk_...">
 <br><br>
-<button onclick="salvaChiave()">💾 SALVA CHIAVE OPENAI</button>
+<button onclick="salvaChiave()">💾 SALVA CHIAVE GRATIS</button>
 <span id="chiaveStato" style="font-size:13px;color:#ffcc00"></span>
 </div>
 
 <div id="live">Sto per partire...</div>
 <div id="log">LOG:<br>• Avvio...</div>
-<div id="risposta">Ciao signore. Ora uso OpenAI, quella di ChatGPT. Metti la chiave sopra una volta sola e ti rispondo davvero a tutto.</div>
+<div id="risposta">Ciao signore. Ora sono gratis. Metti la chiave Groq sopra una volta sola e ti rispondo a tutto, senza pagare.</div>
 <br>
 <input id="domanda" placeholder="Scrivi qui... e premi Invio">
 <br><br>
-<button onclick="testCervello()">🧪 PROVA CERVELLO OPENAI</button>
+<button onclick="testCervello()">🧪 PROVA CERVELLO GRATIS</button>
 <button class="grigio" onclick="sbloccaMicrofono()">🔓 SBLOCCA MICROFONO</button>
 </div>
 
@@ -53,7 +53,6 @@ button.grigio{background:#333;color:#fff}
 let streamMicrofono = null;
 let staParlando = false;
 let inTurno = false;
-
 function log(t){
   var el = document.getElementById("log");
   var ora = new Date().toLocaleTimeString("it-IT");
@@ -64,36 +63,34 @@ function setStato(testo, classe){
   s.textContent = testo;
   s.className = classe || "";
 }
-function getChiave(){
-  return localStorage.getItem("axel-openai-key") || "";
-}
+function getChiave(){ return localStorage.getItem("axel-groq-key") || ""; }
 function mostraStatoChiave(){
   var k = getChiave();
   var el = document.getElementById("chiaveStato");
   var inp = document.getElementById("chiaveInput");
   if(k){
-    el.textContent = "✅ Chiave OpenAI salvata! Cervello serio attivo.";
+    el.textContent = "✅ Chiave gratis salvata! Cervello attivo.";
     el.style.color = "#00ff9d";
-    inp.value = k.slice(0,6) + "..." + k.slice(-4);
+    inp.value = k.slice(0,7) + "..." + k.slice(-4);
   } else {
-    el.textContent = "❌ Nessuna chiave - incolla quella sk- che hai copiato";
+    el.textContent = "❌ Nessuna chiave - incolla quella gsk_ che hai copiato";
     el.style.color = "#ffcc00";
   }
 }
 function salvaChiave(){
   var v = document.getElementById("chiaveInput").value.trim();
   if(!v || v.length < 20){
-    document.getElementById("chiaveStato").textContent = "Incolla la chiave vera, quella lunga che inizia con sk-";
+    document.getElementById("chiaveStato").textContent = "Incolla la chiave vera, quella lunga che inizia con gsk_";
     return;
   }
   if(v.includes("...")){
-    document.getElementById("chiaveStato").textContent = "Incolla la chiave intera, non quella con i puntini. Copiala di nuovo da OpenAI";
+    document.getElementById("chiaveStato").textContent = "Incolla la chiave intera, non quella con i puntini. Copiala di nuovo da console.groq.com";
     return;
   }
-  localStorage.setItem("axel-openai-key", v);
+  localStorage.setItem("axel-groq-key", v);
   mostraStatoChiave();
-  log("Chiave OpenAI salvata");
-  parla("Chiave OpenAI salvata signore. Ora ho il cervello di ChatGPT. Prova a farmi una domanda.");
+  log("Chiave Groq salvata");
+  parla("Chiave gratis salvata signore. Ora ti rispondo a tutto, senza pagare.");
 }
 function mutaMicrofono(muta){
   if(!streamMicrofono) return;
@@ -195,7 +192,7 @@ async function cicloAxel(){
   }
 }
 async function testCervello(){
-  log("TEST cervello OpenAI...");
+  log("TEST cervello gratis...");
   var r = await pensa("cos'è un computer? Spiegamelo in modo semplice.");
   parla(r);
 }
@@ -203,16 +200,16 @@ async function sbloccaMicrofono(){
   var ok = await tieniMicrofonoAperto();
   if(ok) parla("Microfono sbloccato signore.");
 }
-async function cervelloOpenAI(domanda){
+async function cervelloGroq(domanda){
   var chiave = getChiave();
   if(!chiave) return null;
   try{
-    log("OpenAI: mando la domanda...");
-    var r = await fetch("https://api.openai.com/v1/chat/completions", {
+    log("Groq gratis: mando la domanda...");
+    var r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {"Content-Type": "application/json", "Authorization": "Bearer " + chiave},
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "llama-3.3-70b-versatile",
         messages: [
           {role: "system", content: "Sei AXEL, assistente personale italiano come Jarvis. Sai tutto. Rispondi in italiano, semplice, max 6 frasi. Chiamalo sempre e solo signore."},
           {role: "user", content: domanda}
@@ -221,24 +218,23 @@ async function cervelloOpenAI(domanda){
         max_tokens: 600
       })
     });
-    log("OpenAI: status " + r.status);
+    log("Groq: status " + r.status);
     if(!r.ok){
       var err = await r.text();
-      log("OpenAI errore: " + err.slice(0,250));
-      if(r.status === 401) return "Signore, la chiave non è giusta. Copiala di nuovo tutta da OpenAI, deve iniziare con sk-.";
-      if(r.status === 429) return "Signore, hai finito il credito. Devi mettere 5 euro su platform.openai.com / Billing per continuare.";
-      if(r.status === 402 || err.includes("insufficient_quota")) return "Signore, devi mettere credito su OpenAI. Vai su platform.openai.com, in alto a destra Billing, e metti 5 euro. Poi funziona.";
+      log("Groq errore: " + err.slice(0,250));
+      if(r.status === 401) return "Signore, la chiave Groq non è giusta. Copiala di nuovo tutta da console.groq.com, deve iniziare con gsk_.";
+      if(r.status === 429) return "Signore, hai fatto troppe domande in un minuto. Aspetta 20 secondi e riprova.";
       return null;
     }
     var d = await r.json();
     var testo = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
     if(testo){
-      log("OpenAI: risposta ricevuta, " + testo.length + " caratteri");
+      log("Groq: risposta ricevuta, " + testo.length + " caratteri");
       return testo.trim().slice(0,1500);
     }
     return null;
   }catch(e){
-    log("OpenAI errore rete: " + e.message);
+    log("Groq errore rete: " + e.message);
     return null;
   }
 }
@@ -253,19 +249,19 @@ async function pensa(domanda){
       return "Fa " + Function("return (" + expr + ")")() + ", signore.";
     }catch(e){}
   }
-  var r = await cervelloOpenAI(domanda);
+  var r = await cervelloGroq(domanda);
   if(r) return r;
   if(!getChiave()){
-    return "Signore, metti la chiave OpenAI sopra che hai copiato, quella sk-, e premi Salva. Poi ti rispondo a tutto.";
+    return "Signore, metti la chiave gratis Groq sopra, quella gsk_, e premi Salva. Poi ti rispondo a tutto senza pagare.";
   }
-  return "Signore, OpenAI non ha risposto. Controlla la chiave sopra o controlla se hai credito su OpenAI.";
+  return "Signore, Groq non ha risposto. Controlla la chiave sopra o aspetta 20 secondi e riprova.";
 }
 window.addEventListener("load", async function(){
   mostraStatoChiave();
-  log("Avvio OpenAI...");
+  log("Avvio gratis...");
   var ok = await tieniMicrofonoAperto();
   if(ok){
-    await parla("Ciao, sono il tuo assistente personale! Fammi qualsiasi domanda.");
+    await parla("Ciao signore. Ora sono gratis. Metti la chiave Groq sopra una volta sola.");
     cicloAxel();
   }
 });
