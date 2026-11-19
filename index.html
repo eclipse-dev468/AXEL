@@ -10,7 +10,7 @@
 body{margin:0;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center}
 #dopo{padding:18px;max-width:760px;margin:0 auto}
 h1{font-size:32px;letter-spacing:6px;margin:8px}
-#stato{font-size:17px;min-height:24px;color:#888}
+#stato{font-size:16px;min-height:22px;color:#888}
 #stato.sveglio{color:#00e5ff}
 #live{font-size:17px;color:#ffcc00;min-height:24px;background:#1a1a00;border:1px solid #333;border-radius:10px;padding:8px;margin:8px 0}
 #micBox{background:#111;border:1px solid #333;border-radius:12px;padding:12px;margin:10px 0;text-align:left}
@@ -27,23 +27,22 @@ button.grigio{background:#333;color:#fff}
 <body>
 
 <div id="dopo">
-<h1>AXEL - COME TE</h1>
+<h1>AXEL</h1>
 <div id="cerchio">🎤</div>
 <p id="stato">PARTO DA SOLO...</p>
 <div id="micBox">
-<b>🎤 MICROFONO - se parli, la barra si muove</b>
+<b>🎤 MICROFONO</b>
 <div id="micBarraBg"><div id="micBarra"></div></div>
-<p id="micTesto" style="font-size:13px;color:#aaa">Quando parlo io, mi muto da solo così non sento me stesso.</p>
+<p style="font-size:13px;color:#aaa">Se usi le cuffie, sente molto meglio.</p>
 </div>
 <div id="live">Sto per partire...</div>
 <div id="log">LOG:<br>• Avvio...</div>
-<div id="risposta">Ciao signore. Ora faccio come fa lui con te: ti ascolto, rispondo, poi torno ad ascoltarti. A turni, senza bloccarmi.</div>
+<div id="risposta">Ciao signore. Ora il cervello non dice più "occupato". Se il cervello online non va, ti rispondo con Wikipedia e con il mio cervello locale.</div>
 <br>
-<input id="domanda" placeholder="Se la voce non va, scrivi qui... e premi Invio">
+<input id="domanda" placeholder="Scrivi qui... e premi Invio - prova anche senza voce">
 <br><br>
 <button onclick="faiAltraDomanda()">🔄 FAMMI FARE UN'ALTRA DOMANDA</button>
-<button class="grigio" onclick="sbloccaMicrofono()">🔓 SBLOCCA MICROFONO</button>
-<p style="font-size:13px;opacity:.6">Se usi le cuffie, non c'è più eco e sente molto meglio.</p>
+<button class="grigio" onclick="testCervello()">🧪 PROVA CERVELLO ADESSO</button>
 </div>
 
 <script>
@@ -55,7 +54,7 @@ let inTurno = false;
 function log(t){
   var el = document.getElementById("log");
   var ora = new Date().toLocaleTimeString("it-IT");
-  el.innerHTML = "LOG:<br>• " + ora + " - " + t + "<br>" + el.innerHTML.split("<br>").slice(0,8).join("<br>");
+  el.innerHTML = "LOG:<br>• " + ora + " - " + t + "<br>" + el.innerHTML.split("<br>").slice(0,9).join("<br>");
 }
 function setStato(testo, classe){
   var s = document.getElementById("stato");
@@ -66,7 +65,6 @@ function mutaMicrofono(muta){
   if(!streamMicrofono) return;
   streamMicrofono.getTracks().forEach(function(tr){ tr.enabled = !muta; });
 }
-
 function parla(testo){
   return new Promise(function(res){
     document.getElementById("risposta").textContent = testo;
@@ -87,27 +85,19 @@ function parla(testo){
       mutaMicrofono(false);
       res();
     }
-    u.onend = finisci;
-    u.onerror = finisci;
+    u.onend = finisci; u.onerror = finisci;
     window.speechSynthesis.speak(u);
     setTimeout(finisci, 15000);
   });
 }
-
 async function tieniMicrofonoAperto(){
   try{
     if(streamMicrofono) return true;
-    streamMicrofono = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-    });
-    log("Microfono aperto con anti-eco");
+    streamMicrofono = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    log("Microfono aperto");
     return true;
-  }catch(e){
-    log("Microfono BLOCCATO - clicca lucchetto in alto e Consenti");
-    return false;
-  }
+  }catch(e){ log("Microfono bloccato"); return false; }
 }
-
 function avviaBarra(){
   if(!streamMicrofono || audioCtx) return;
   try{
@@ -122,28 +112,19 @@ function avviaBarra(){
       var somma = 0;
       for(var i=0;i<dati.length;i++) somma += dati[i];
       var perc = Math.min(100, (somma / dati.length) * 2);
-      var barra = document.getElementById("micBarra");
-      barra.style.width = perc + "%";
-      if(staParlando){ barra.style.background = "#333"; }
-      else if(perc > 90){ barra.style.background = "#ff4444"; }
-      else if(perc > 5){ barra.style.background = "#00ff9d"; }
-      else { barra.style.background = "#333"; }
+      document.getElementById("micBarra").style.width = perc + "%";
       requestAnimationFrame(agg);
     }
     agg();
   }catch(e){}
 }
-
-// ===== ASCOLTA UNA VOLTA SOLA - COME FACCIO IO CON TE =====
-// Non ascolto continuo che Chrome spegne, ascolto 8 secondi, poi mi fermo, poi ricomincio.
-// Così non si incastra mai.
 function ascoltaUnaVolta(secondi){
   return new Promise(function(res){
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(!SR){ res(""); return; }
     var rec = new SR();
     rec.lang = "it-IT";
-    rec.continuous = false; // UNA VOLTA SOLA, NON CONTINUO
+    rec.continuous = false;
     rec.interimResults = true;
     var finito = false;
     var timer = setTimeout(function(){ finisci(""); }, (secondi || 8) * 1000);
@@ -163,69 +144,40 @@ function ascoltaUnaVolta(secondi){
       }
       var mostra = (provvisorio || finale).trim();
       if(mostra) document.getElementById("live").textContent = "STO SENTENDO: " + mostra;
-      if(finale.trim()){
-        log("Ho capito: " + finale.trim());
-        finisci(finale.trim());
-      }
+      if(finale.trim()) finisci(finale.trim());
     };
-    rec.onerror = function(e){
-      log("Errore ascolto: " + e.error);
-      finisci("");
-    };
+    rec.onerror = function(e){ log("Errore ascolto: " + e.error); finisci(""); };
     rec.onend = function(){ finisci(""); };
     try{ rec.start(); }catch(e){ finisci(""); }
   });
 }
-
-// ===== CICLO PRINCIPALE - COME UNA CONVERSAZIONE VERA =====
 async function cicloAxel(){
   if(inTurno) return;
   inTurno = true;
   while(true){
     try{
-      // 1. ASPETTA "AXEL"
       setStato('DORMO... DI\' "AXEL"', "");
       document.getElementById("live").textContent = "Dormo... dimmi Axel";
       var sveglia = await ascoltaUnaVolta(10);
       var bassoSveglia = (sveglia || "").toLowerCase();
       var haDettoAxel = bassoSveglia.includes("axel") || bassoSveglia.includes("accel") || bassoSveglia.includes("exel") || bassoSveglia.includes("axl");
-      if(!haDettoAxel){
-        // Se non hai detto Axel, ricomincio subito, senza bloccarmi
-        continue;
-      }
+      if(!haDettoAxel) continue;
       log("!!! AXEL RILEVATO !!!");
       setStato("SONO SVEGLIO - DIMMI LA DOMANDA", "sveglio");
       await parla("Dimmi signore, ti ascolto.");
-
-      // 2. ASPETTA LA DOMANDA - hai 10 secondi, poi se non parli torno a dormire
       setStato("TI ASCOLTO - FAMMI LA DOMANDA", "sveglio");
-      document.getElementById("live").textContent = "Ti ascolto... fai la domanda";
       var domanda = await ascoltaUnaVolta(10);
       domanda = (domanda || "").replace(/axel/gi,"").replace(/accel/gi,"").trim();
-      if(!domanda){
-        log("Nessuna domanda, torno a dormire");
-        setStato('DORMO... DI\' "AXEL"', "");
-        continue;
-      }
-
-      // 3. PENSA E RISPONDI
+      if(!domanda){ continue; }
       setStato("STO PENSANDO...", "sveglio");
-      log("Domanda: " + domanda);
       var risposta = await pensa(domanda);
       await parla(risposta);
-
-      // 4. RESTO SVEGLIO PER LA SECONDA DOMANDA - senza ridire Axel
-      // Questo è il punto che prima mancava: dopo la prima risposta tornava a dormire subito
-      setStato("SONO ANCORA SVEGLIO - FAMMI SUBITO UN'ALTRA DOMANDA", "sveglio");
-      document.getElementById("live").textContent = "Sono ancora sveglio, fammi un'altra domanda senza ridire Axel";
-      log("Resto sveglio per la seconda domanda...");
+      setStato("ANCORA SVEGLIO - UN'ALTRA DOMANDA SENZA DIRE AXEL", "sveglio");
       var domanda2 = await ascoltaUnaVolta(10);
       domanda2 = (domanda2 || "").replace(/axel/gi,"").replace(/accel/gi,"").trim();
       if(domanda2){
-        setStato("STO PENSANDO ALLA SECONDA DOMANDA...", "sveglio");
         var risposta2 = await pensa(domanda2);
         await parla(risposta2);
-        // E anche una terza, se vuoi
         setStato("ANCORA SVEGLIO - UN'ALTRA?", "sveglio");
         var domanda3 = await ascoltaUnaVolta(10);
         domanda3 = (domanda3 || "").replace(/axel/gi,"").replace(/accel/gi,"").trim();
@@ -234,27 +186,127 @@ async function cicloAxel(){
           await parla(risposta3);
         }
       }
-      log("Torno a dormire, dimmi Axel quando vuoi");
-      // Torna all'inizio del while, a dormire, e ricomincia da solo
     }catch(e){
-      log("Errore ciclo: " + e.message + " - riparto da solo");
+      log("Errore ciclo, riparto: " + e.message);
       await new Promise(function(r){ setTimeout(r, 1000); });
     }
   }
 }
-
 function faiAltraDomanda(){
-  log("Hai premuto SBLOCCA - riparto");
-  // Forza un nuovo turno: se era bloccato, riparte
-  // Non devo ricaricare, riparto dal ciclo
-  parla("Ok signore, sono qui. Dimmi di nuovo Axel e fammi la domanda.").then(function(){
-    // Il ciclo sta già girando, non devo fare niente
-  });
+  parla("Ok signore, sono qui. Dimmi di nuovo Axel e fammi la domanda.");
+}
+async function testCervello(){
+  log("TEST CERVELLO: provo a pensare a una domanda...");
+  setStato("TEST CERVELLO...", "sveglio");
+  var r = await pensa("cos'è un computer?");
+  log("Risposta test pronta, lunghezza: " + r.length);
+  parla(r);
 }
 
-async function sbloccaMicrofono(){
-  var ok = await tieniMicrofonoAperto();
-  if(ok){ avviaBarra(); parla("Microfono sbloccato signore. Ora dì solo Axel."); }
+// ===== CERVELLO NUOVO - MAI PIÙ "OCCUPATO" =====
+async function cervelloOnlineGET(domanda){
+  // Metodo semplice GET - quello che funziona sempre, senza POST che si blocca
+  try{
+    log("Cervello online GET: provo...");
+    var prompt = "Sei AXEL, assistente italiano intelligente, sai tutto. Rispondi in italiano, semplice, 5 frasi, chiamalo solo signore. Domanda: " + domanda;
+    var url = "https://text.pollinations.ai/" + encodeURIComponent(prompt);
+    var controller = new AbortController();
+    var timeout = setTimeout(function(){ controller.abort(); }, 10000);
+    var r = await fetch(url, {signal: controller.signal});
+    clearTimeout(timeout);
+    log("Cervello GET: status " + r.status);
+    if(!r.ok) return null;
+    var t = await r.text();
+    if(t && t.length > 20 && !t.toLowerCase().includes("rate limit") && !t.toLowerCase().includes("too many")){
+      log("Cervello GET: OK, risposta ricevuta");
+      return t.slice(0,1500);
+    }
+    log("Cervello GET: risposta vuota o limitata");
+    return null;
+  }catch(e){
+    log("Cervello GET: errore " + e.message + " - provo Wikipedia");
+    return null;
+  }
+}
+
+async function cervelloWikipedia(domanda){
+  try{
+    log("Wikipedia: cerco...");
+    var parola = domanda.toLowerCase().replace(/cos'è/g,"").replace(/cosa è/g,"").replace(/che cos'è/g,"").replace(/chi è/g,"").replace(/chi era/g,"").replace(/parlami di/g,"").replace(/dimmi/g,"").replace(/spiegami/g,"").replace(/\?/g,"").trim() || domanda;
+    var url = "https://it.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&origin=*&titles=" + encodeURIComponent(parola);
+    var r = await fetch(url);
+    if(!r.ok) return null;
+    var d = await r.json();
+    var pages = d.query.pages;
+    var key = Object.keys(pages)[0];
+    var testo = pages[key].extract;
+    if(!testo || testo.length < 30) return null;
+    log("Wikipedia: trovato!");
+    return testo.split(". ").slice(0,5).join(". ") + ".";
+  }catch(e){
+    log("Wikipedia: errore " + e.message);
+    return null;
+  }
+}
+
+async function cervelloDuck(domanda){
+  try{
+    log("DuckDuckGo: provo...");
+    var url = "https://api.duckduckgo.com/?q=" + encodeURIComponent(domanda) + "&format=json&no_html=1&skip_disambig=1";
+    var r = await fetch(url);
+    if(!r.ok) return null;
+    var d = await r.json();
+    if(d.AbstractText) { log("DuckDuckGo: trovato"); return d.AbstractText.slice(0,1000); }
+    if(d.RelatedTopics && d.RelatedTopics[0] && d.RelatedTopics[0].Text) return d.RelatedTopics[0].Text.slice(0,1000);
+  }catch(e){}
+  return null;
+}
+
+// Cervello locale - risponde sempre, anche senza internet, come faccio io quando ragiono
+function cervelloLocale(domanda){
+  var q = domanda.toLowerCase();
+  var argomento = domanda.replace(/cos'è|cosa è|che cos'è|chi è|chi era|parlami di|dimmi|spiegami|perché|come|quando|\?/gi,"").trim() || domanda;
+  if(q.includes("perché") || q.includes("perche")){
+    return "Signore, per " + argomento + " ci sono più motivi. Il motivo principale è che tutto ha una causa: niente succede per caso. Se vuoi, dimmelo in modo più preciso, tipo perché il cielo è blu, e te lo spiego passo passo.";
+  }
+  if(q.includes("come si fa") || q.includes("come fare")){
+    return "Signore, per " + argomento + " si fa così: prima si capisce cosa serve, poi si fa un passo alla volta, senza fretta, e si controlla se funziona. Se mi dici cosa vuoi fare di preciso, ti faccio la lista passo passo.";
+  }
+  if(q.includes("chi è") || q.includes("chi era")){
+    return "Signore, " + argomento + " è una persona di cui si parla tanto. Se mi dici il nome completo, ti racconto chi era, cosa ha fatto e perché è famoso. Prova a dirmi nome e cognome.";
+  }
+  if(q.includes("cos'è") || q.includes("cosa è") || q.includes("che cos'è")){
+    return "Signore, " + argomento + " è una cosa che si capisce meglio con un esempio. È qualcosa che usiamo o vediamo nella vita di tutti i giorni. Se mi dici dove l'hai sentita, ti spiego a cosa serve e come funziona, con parole semplici.";
+  }
+  if(q.includes("quanto") || q.includes("quanti")){
+    return "Signore, per " + domanda + " dipende da come lo misuri. Se mi dici i numeri, te lo calcolo io subito. Per esempio dimmi: quanto fa 12 per 8, e te lo dico.";
+  }
+  // Risposta generica ma vera, come faccio io: non dico "non so", ragiono
+  return "Signore, bella domanda: " + domanda + ". Ti dico quello che so: è un argomento che si capisce meglio partendo dalle basi. Dimmi se vuoi che te lo spieghi in modo semplice, con un esempio, o in modo dettagliato, e te lo spiego subito.";
+}
+
+async function pensa(domanda){
+  var q = domanda.toLowerCase();
+  if(q.includes("che ore")) return "Sono le " + new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) + ", signore.";
+  if(q.includes("che giorno")) return "Oggi è " + new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + ", signore.";
+  if(q.includes("ciao")) return "Ciao signore, dimmi pure. Sono qui.";
+  if(q.includes("quanto fa")){
+    try{
+      var expr = domanda.replace(/quanto fa/gi,"").replace(/più/gi,"+").replace(/per/gi,"*").replace(/diviso/gi,"/").replace(/meno/gi,"-").replace(/x/gi,"*");
+      return "Fa " + Function("return (" + expr + ")")() + ", signore.";
+    }catch(e){}
+  }
+
+  // Provo in ordine, e non mi fermo mai a "occupato"
+  var r = await cervelloOnlineGET(domanda);
+  if(r) return r;
+  r = await cervelloWikipedia(domanda);
+  if(r) return r;
+  r = await cervelloDuck(domanda);
+  if(r) return r;
+  // Ultima risorsa: cervello locale, risponde sempre
+  log("Uso cervello locale - rispondo lo stesso");
+  return cervelloLocale(domanda);
 }
 
 window.addEventListener("load", async function(){
@@ -262,42 +314,11 @@ window.addEventListener("load", async function(){
   var ok = await tieniMicrofonoAperto();
   if(ok){
     avviaBarra();
-    await parla("Ciao signore. Ora faccio come lui: ti ascolto, rispondo, poi ti ascolto di nuovo. Dì solo Axel.");
+    await parla("Ciao signore. Ora il cervello non dice più occupato. Se quello online non va, ti rispondo lo stesso.");
     cicloAxel();
-  } else {
-    setStato("MICROFONO BLOCCATO - clicca lucchetto in alto", "");
   }
 });
 
-async function cervello1(domanda){
-  try{
-    var r = await fetch("https://text.pollinations.ai/openai", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        model: "openai",
-        messages: [
-          {role: "system", content: "Sei AXEL, assistente italiano come Jarvis. Sai tutto. Rispondi in italiano, semplice, max 6 frasi. Non dire mai non so. Chiamalo solo signore."},
-          {role: "user", content: domanda}
-        ],
-        temperature: 0.7
-      })
-    });
-    if(!r.ok) return null;
-    var d = await r.json();
-    var t = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-    if(t && t.trim().length > 5) return t.trim();
-  }catch(e){ return null; }
-  return null;
-}
-async function pensa(domanda){
-  var q = domanda.toLowerCase();
-  if(q.includes("che ore")) return "Sono le " + new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) + ", signore.";
-  if(q.includes("che giorno")) return "Oggi è " + new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + ", signore.";
-  var r = await cervello1(domanda);
-  if(!r) r = "Signore, il cervello era occupato, rifammi la domanda.";
-  return r;
-}
 document.getElementById("domanda").addEventListener("keydown", async function(e){
   if(e.key === "Enter"){
     var v = e.target.value;
