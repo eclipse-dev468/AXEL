@@ -1,90 +1,128 @@
-// AXEL-MEMORIA.md: la memoria di Axel in un file di testo che puoi aprire e modificare.
-// Axel lo rilegge prima di ogni risposta, quindi qualunque AI stia usando in quel momento
-// (e anche dopo un riavvio) sa chi sei e riparte dal punto in cui eravate rimasti.
-import { readFile, writeFile } from "node:fs/promises";
+// AXEL - Memoria
+// Ricorda preferenze, conversazioni e routine. Tutto resta sul tuo PC.
 
-const H_ME = "## Cosa so di te";
-const H_NOW = "## Di cosa stavamo parlando";
-const H_BRAIN = "## Ultimi cervelli usati";
+const KEY = "axel-memory-v1";
 
-const intro = `# Memoria di AXEL
+const DEFAULT = {
+  createdAt: new Date().toISOString(),
+  userName: "",
+  preferences: {
+    voice: "free",
+    language: "it",
+  },
+  facts: [],
+  conversations: [],
+  routines: [],
+  notes: [],
+};
 
-Axel legge questo file prima di ogni risposta, qualunque intelligenza artificiale stia usando.
-Puoi modificarlo a mano: aggiungi o togli righe in "${H_ME.slice(3)}" e Axel se ne accorge subito.
-Le altre due sezioni le aggiorna lui da solo.
-`;
-
-function section(md, head) {
-  const i = md.indexOf(head);
-  if (i < 0) return "";
-  const rest = md.slice(i + head.length);
-  const j = rest.search(/\n## /);
-  return (j < 0 ? rest : rest.slice(0, j)).trim();
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return structuredClone(DEFAULT);
+    const data = JSON.parse(raw);
+    return { ...structuredClone(DEFAULT), ...data };
+  } catch {
+    return structuredClone(DEFAULT);
+  }
 }
-const bullets = (s) => s.split("\n").map((l) => l.trim()).filter((l) => /^[-*] /.test(l)).map((l) => l.slice(2).trim()).filter(Boolean);
-const oneLine = (s, n) => { const t = String(s).replace(/\s+/g, " ").trim(); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
 
-export function createMemory(file) {
-  let cache = null;
+let memory = load();
 
-  async function load() {
-    let md = "";
-    try { md = await readFile(file, "utf8"); } catch {}
-    cache = { facts: bullets(section(md, H_ME)), now: section(md, H_NOW), brains: bullets(section(md, H_BRAIN)) };
-    return cache;
-  }
-  async function save() {
-    const c = cache;
-    const md = `${intro}
-${H_ME}
-${c.facts.length ? c.facts.map((f) => `- ${f}`).join("\n") : "- (ancora niente: dimmi qualcosa di te e me lo segno)"}
+function save() {
+  try {
+    memory.updatedAt = new Date().toISOString();
+    localStorage.setItem(KEY, JSON.stringify(memory));
+  } catch {}
+}
 
-${H_NOW}
-${c.now || "_Nessuna conversazione ancora._"}
+export function getMemory() {
+  return memory;
+}
 
-${H_BRAIN}
-${c.brains.length ? c.brains.map((b) => `- ${b}`).join("\n") : "- (nessuno ancora)"}
-`;
-    await writeFile(file, md);
-  }
+export function rememberFact(fact) {
+  if (!fact) return;
+  const text = String(fact).trim();
+  if (!text) return;
+  if (memory.facts.includes(text)) return;
+  memory.facts.push(text);
+  if (memory.facts.length > 100) memory.facts = memory.facts.slice(-100);
+  save();
+}
 
+export function rememberConversation(role, text) {
+  if (!text) return;
+  memory.conversations.push({
+    role,
+    text: String(text).slice(0, 2000),
+    at: new Date().toISOString(),
+  });
+  if (memory.conversations.length > 200) memory.conversations = memory.conversations.slice(-200);
+  save();
+}
+
+export function addNote(note) {
+  if (!note) return;
+  memory.notes.push({
+    text: String(note).slice(0, 2000),
+    at: new Date().toISOString(),
+  });
+  save();
+}
+
+export function getNotes() {
+  return memory.notes;
+}
+
+export function setPreference(key, value) {
+  memory.preferences[key] = value;
+  save();
+}
+
+export function getPreferences() {
+  return memory.preferences;
+}
+
+export function setUserName(name) {
+  memory.userName = String(name || "").trim().slice(0, 50);
+  save();
+}
+
+export function getUserName() {
+  return memory.userName || "";
+}
+
+export function clearMemory() {
+  memory = structuredClone(DEFAULT);
+  try {
+    localStorage.removeItem(KEY);
+  } catch {}
+  save();
+  return memory;
+}
+
+// Serve ad app.js per ricordarsi chi sei e cosa ti piace
+export function getMemorySummary() {
+  const facts = memory.facts.slice(-10).join(" | ");
+  const last = memory.conversations.slice(-6).map(c => `${c.role}: ${c.text}`).join("\n");
   return {
-    // Prima volta: crea il file partendo dai ricordi che Axel aveva già salvato.
-    async init(oldMemories = []) {
-      await load();
-      if (!cache.facts.length && oldMemories.length) cache.facts = oldMemories.map((m) => m.text).reverse();
-      cache.facts = cache.facts.filter((f) => !f.startsWith("(ancora niente"));
-      cache.brains = cache.brains.filter((b) => !b.startsWith("(nessuno"));
-      await save();
-    },
-    // Testo da dare all'AI insieme alle istruzioni (riletto ogni volta: le modifiche a mano valgono subito).
-    async forPrompt() {
-      const c = await load();
-      const facts = c.facts.filter((f) => !f.startsWith("(ancora niente"));
-      return {
-        facts,
-        text: `Cosa sai dell'utente:\n${facts.length ? facts.map((f) => `- ${f}`).join("\n") : "- ancora niente"}\n\nDi cosa stavate parlando l'ultima volta:\n${c.now && !c.now.startsWith("_Nessuna") ? c.now : "- nessuna conversazione precedente"}`.slice(0, 7000),
-      };
-    },
-    async addFact(text) {
-      await load();
-      cache.facts = cache.facts.filter((f) => !f.startsWith("(ancora niente") && f.toLowerCase() !== text.toLowerCase());
-      cache.facts.push(oneLine(text, 300));
-      await save();
-    },
-    // Dopo ogni risposta: tiene le ultime battute e quale AI ha risposto.
-    async afterTurn(history, brain) {
-      await load();
-      const when = new Date().toLocaleString("it-IT", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
-      const lines = history.slice(-8).map((m) => `- ${m.role === "user" ? "Tu" : "Axel"}: ${oneLine(m.content, 280)}`);
-      cache.now = `_Aggiornato ${when}._\n${lines.join("\n")}`;
-      if (brain?.via) {
-        cache.brains = cache.brains.filter((b) => !b.startsWith("(nessuno"));
-        const last = cache.brains[0] || "";
-        if (!last.includes(brain.via)) cache.brains.unshift(`${when}: ${brain.via}`);
-        cache.brains = cache.brains.slice(0, 10);
-      }
-      await save();
-    },
+    userName: memory.userName,
+    facts,
+    lastConversations: last,
+    notesCount: memory.notes.length,
   };
 }
+
+export default {
+  getMemory,
+  rememberFact,
+  rememberConversation,
+  addNote,
+  getNotes,
+  setPreference,
+  getPreferences,
+  setUserName,
+  getUserName,
+  clearMemory,
+  getMemorySummary,
+};
