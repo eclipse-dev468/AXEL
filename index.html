@@ -1,80 +1,111 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#000">
-  <title>AXEL</title>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXEL</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#000;color:#eaf6ff;font-family:system-ui,sans-serif;overflow:hidden}
+.top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:18px 22px;z-index:5}
+.brand b{font-size:22px;letter-spacing:.25em}.brand small{display:block;font-size:10px;letter-spacing:.22em;opacity:.7}
+.status{font-size:12px;letter-spacing:.18em}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#00ff9d;margin-right:8px}
+#caption{position:fixed;left:50%;bottom:160px;transform:translateX(-50%);text-align:center;width:min(700px,90vw);z-index:5}#you{opacity:.7}#says{font-size:24px;font-weight:700;line-height:1.3;min-height:40px}
+#hint{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:5;letter-spacing:.15em}#hint b{color:#00e5ff}
+#gate{position:fixed;inset:0;background:#000;display:grid;place-items:center;z-index:20;cursor:pointer}.gate-inner{text-align:center}.gate-ring{width:150px;height:150px;border:1px solid #00e5ff;border-radius:50%;margin:0 auto 20px;position:relative}.gate-inner>b{font-size:52px;letter-spacing:.35em}.gate-inner span{display:block;margin-top:10px;letter-spacing:.2em;font-size:12px}.gate-inner small{display:block;margin-top:8px;opacity:.6}
+#controls{position:fixed;bottom:18px;left:22px;right:22px;display:flex;gap:8px;z-index:6}#controls button{background:#111;border:1px solid #444;color:#fff;padding:10px 14px;border-radius:99px;cursor:pointer}
+#typeBox{position:fixed;left:50%;bottom:50px;transform:translateX(-50%);z-index:6;width:min(520px,90vw);display:none}#typeBox input{width:100%;background:#111;border:1px solid #00e5ff;color:#fff;padding:12px;border-radius:99px}
+#err{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#300;color:#fff;padding:10px 14px;border-radius:10px;display:none;z-index:50;max-width:90vw;text-align:center}
+</style>
 </head>
-<body data-mode="boot">
-  <canvas id="gl"></canvas>
-  <div id="labels"></div>
-  <div class="vignette"></div>
-  <div class="grain"></div>
-  <div class="scan"></div>
-  <header class="top">
-    <div class="brand">
-      <div class="mark"><i></i><i></i><i></i></div>
-      <div><b>AXEL</b><small>ASSISTENTE PERSONALE</small></div>
-    </div>
-    <div class="status"><span class="dot"></span><span id="statusText">INIZIALIZZAZIONE</span><span id="brainChip" hidden><i>CERVELLO</i><b id="brainName"></b></span></div>
-    <div class="clock"><b id="clock">--:--:--</b><small id="date"></small></div>
-  </header>
-  <section id="stats" aria-live="polite"></section>
-  <section id="timeline">
-    <h3><span>AGENDA</span><em>OGGI</em></h3>
-    <ol id="agenda"></ol>
-  </section>
-  <div id="thinking">
-    <span id="thinkLabel">ANALISI SEMANTICA</span>
-    <div class="think-row"><b id="synapses">0</b><small>SINAPSI<br>ATTIVATE</small><em id="thinkTime">0.0s</em></div>
-  </div>
-  <div id="caption">
-    <p id="you"></p>
-    <p id="says"></p>
-  </div>
-  <div id="hint">
-    <span>DÌ</span><b>«CIAO AXEL»</b>
-    <div class="mic"><i id="micBar"></i></div>
-  </div>
-  <div id="gate" onclick="if(window.__axelStart) window.__axelStart(); else this.style.display='none'">
-    <div class="gate-inner">
-      <div class="gate-ring"></div>
-      <b>AXEL</b>
-      <span id="gateText">CLICCA PER INIZIALIZZARE</span>
-      <small>Abilita microfono e audio · schermo intero</small>
-    </div>
-  </div>
-  <div id="setup" class="setup">
-    <form class="setup-card" id="setupForm" autocomplete="off">
-      <span class="kicker">CONFIGURAZIONE · 1 MINUTO</span>
-      <h2>Attiviamo AXEL</h2>
-      <section class="step">
-        <div class="step-head"><b>01</b><div><h3>Cervello AI <em>obbligatorio</em></h3><p>Scegli come ragiona Axel: gratis, passando da un'AI all'altra quando una finisce i limiti, oppure con OpenAI a consumo.</p></div></div>
-        <div class="choice">
-          <label><input type="radio" name="brain" value="free" checked> Gratis (FreeLLMAPI)</label>
-          <label><input type="radio" name="brain" value="openai"> OpenAI</label>
-        </div>
-        <div id="freeBox">
-          <small class="state" id="freeState"></small>
-          <ol class="howto">
-            <li>Installa <b>FreeLLMAPI</b> (gratis, open source): <a href="https://github.com/tashfeenahmed/freellmapi/releases/latest" target="_blank" rel="noopener">scarica per Windows o Mac ↗</a>. Resta acceso con un'icona vicino all'orologio.</li>
-            <li>Apri <a id="freeDash" href="http://localhost:3001" target="_blank" rel="noopener">il pannello di FreeLLMAPI ↗</a>, vai su <b>Keys</b> e incolla almeno una chiave gratuita.</li>
-            <li>Torna qui e premi <b>Attiva Axel</b>: si collega da solo.</li>
-          </ol>
-          <details><summary>Non si collega da solo?</summary>
-            <p>Clicca l'icona di FreeLLMAPI vicino all'orologio, premi <b>Copy Key</b> e incolla qui la chiave (inizia con freellmapi-).</p>
-            <div class="field"><input id="freeKey" type="password" placeholder="freellmapi-..." spellcheck="false"></div>
-          </details>
-        </div>
-        <div id="openaiBox">
-          <div class="field">
-            <input id="openaiKey" type="password" placeholder="sk-..." spellcheck="false">
-            <a class="btn" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OTTIENI LA CHIAVE ↗</a>
-          </div>
-          <small class="state" id="openaiState"></small>
-        </div>
-      </section>
-      <section class="step">
-        <div class="step-head"><b>02</b><div><h3>Voce <em>facoltativo</em></h3><p>Con ElevenLabs Axel ha una voce britannica molto realistica. S
+<body>
+<div class="top"><div class="brand"><b>AXEL</b><small>ASSISTENTE PERSONALE</small></div><div class="status"><span class="dot"></span><span id="statusText">PRONTO - CLICCA AXEL</span></div><div id="clock">--:--</div></div>
+<div id="err"></div>
+<div id="caption"><p id="you"></p><p id="says">Clicca AXEL, poi dimmi pure.</p></div>
+<div id="hint"><span>DÌ</span> <b>«CIAO AXEL»</b> <span>oppure premi T e scrivi</span></div>
+<div id="gate"><div class="gate-inner"><div class="gate-ring"></div><b>AXEL</b><span>CLICCA PER INIZIALIZZARE</span><small>Abilita microfono e audio</small></div></div>
+<div id="controls"><button id="testBtn">PROVA VOCE</button><button id="micBtn">PROVA MICROFONO</button><small style="margin-left:auto;opacity:.6">T = scrivi</small></div>
+<form id="typeBox"><input placeholder="Scrivi a Axel e premi Invio…" autocomplete="off"></form>
+<script>
+let rec=null, listening=false, speaking=false;
+const $=s=>document.querySelector(s);
+function showErr(t){ const e=$("#err"); e.style.display="block"; e.textContent=t; setTimeout(()=>e.style.display="none",6000); }
+function setStatus(t){ $("#statusText").textContent=t; }
+setInterval(()=>{ $("#clock").textContent=new Date().toLocaleTimeString("it-IT"); },1000);
+function speak(text){
+  return new Promise(res=>{
+    if(!("speechSynthesis" in window)){ res(); return; }
+    try{ window.speechSynthesis.cancel(); }catch{}
+    // Chiudi orecchie mentre parlo - anti eco
+    speaking=true; try{ rec&&rec.stop(); }catch{}
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="it-IT"; u.rate=1;
+    const vs=window.speechSynthesis.getVoices();
+    const it=vs.find(v=>v.lang==="it-IT")||vs.find(v=>v.lang&&v.lang.startsWith("it"));
+    if(it) u.voice=it;
+    u.onend=()=>{ speaking=false; setTimeout(()=>{ if(listening) startListen(); },500); res(); };
+    u.onerror=()=>{ speaking=false; res(); };
+    window.speechSynthesis.speak(u);
+    setTimeout(()=>{ if(speaking){ speaking=false; res(); } },12000);
+  });
+}
+async function getAnswer(q){
+  // 1. Prova FreeLLMAPI
+  try{
+    const r=await fetch("http://localhost:3001/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"auto",messages:[{role:"system",content:"Sei AXEL, assistente italiano, breve, utile, mai dire undefined."},{role:"user",content:q}],temperature:0.7,max_tokens:400})});
+    if(r.ok){ const d=await r.json(); const t=d?.choices?.[0]?.message?.content?.trim(); if(t) return t; }
+  }catch{}
+  // 2. Risposte locali se FreeLLMAPI non c'è
+  const t=q.toLowerCase();
+  if(t.includes("ciao")||t.includes("buongiorno")) return "Ciao! Sono Axel, che piacere sentirti. Dimmi pure cosa ti serve.";
+  if(t.includes("che ore")) return "Sono le "+new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})+".";
+  if(t.includes("chi sei")) return "Sono Axel, il tuo assistente personale. Posso aiutarti con domande, calcoli e idee.";
+  if(t.includes("buco nero")) return "Un buco nero è una zona dello spazio dove la gravità è così forte che nemmeno la luce riesce a scappare. Si forma quando una stella molto grande muore e collassa su se stessa.";
+  if(t.includes("grazie")) return "Di niente! Sono qui per questo.";
+  const m=q.match(/([0-9]+)\s*[\+\-\*\/x]\s*([0-9]+)/);
+  if(m||t.includes("quanto fa")){ try{ const expr=q.toLowerCase().replace(/quanto fa/g,"").replace(/più/g,"+").replace(/per/g,"*").replace(/diviso/g,"/").replace(/meno/g,"-").match(/[0-9\.\s\+\-\*\/\(\)]+/)[0]; const r=Function("return ("+expr+")")(); return "Fa "+r+"."; }catch{} }
+  return "Ho capito: "+q+". Se FreeLLMAPI non è aperto, uso le risposte salvate. Apri FreeLLMAPI vicino all'orologio e chiedimelo di nuovo per una risposta più intelligente.";
+}
+async function handleText(q){
+  if(!q) return;
+  $("#you").textContent="TU: "+q;
+  setStatus("ELABORO...");
+  const a=await getAnswer(q);
+  $("#says").textContent=a;
+  setStatus("IN ASCOLTO");
+  await speak(a);
+}
+function startListen(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ showErr("Microfono vocale non supportato. Usa Chrome. Puoi comunque scrivere con T."); return; }
+  try{
+    if(rec) try{rec.stop();}catch{}
+    rec=new SR(); rec.lang="it-IT"; rec.continuous=true; rec.interimResults=false;
+    rec.onresult=(e)=>{
+      if(speaking) return;
+      const txt=e.results[e.results.length-1][0].transcript.trim();
+      if(txt) handleText(txt);
+    };
+    rec.onerror=(e)=>{ if(e.error==="not-allowed") showErr("Microfono bloccato: clicca il lucchetto vicino al link in alto e metti Microfono su Consenti, poi ricarica."); };
+    rec.onend=()=>{ if(listening && !speaking){ try{rec.start();}catch{} } };
+    rec.start(); listening=true; setStatus("IN ASCOLTO - PARLA PURE");
+  }catch(e){ showErr("Non riesco ad avviare il microfono: "+e.message); }
+}
+async function start(){
+  $("#gate").style.display="none";
+  setStatus("AVVIO MICROFONO...");
+  try{ await navigator.mediaDevices.getUserMedia({audio:true}); }catch{ showErr("Microfono bloccato: clicca il lucchetto in alto vicino al link e metti Microfono su Consenti."); }
+  startListen();
+  const hello="Ciao, sono Axel. Dimmi pure.";
+  $("#says").textContent=hello;
+  await speak(hello);
+}
+$("#gate").addEventListener("click", start);
+$("#testBtn").addEventListener("click", ()=>{ speak("Prova voce. Mi senti? Se mi senti, l'audio funziona."); });
+$("#micBtn").addEventListener("click", async ()=>{ try{ await navigator.mediaDevices.getUserMedia({audio:true}); showErr("Microfono OK! Ora puoi parlare."); startListen(); }catch{ showErr("Microfono bloccato: clicca il lucchetto in alto e Consenti."); } });
+document.addEventListener("keydown",(e)=>{
+  if(e.key.toLowerCase()==="t"){ const tb=$("#typeBox"); tb.style.display=tb.style.display==="block"?"none":"block"; if(tb.style.display==="block") tb.querySelector("input").focus(); }
+});
+$("#typeBox").addEventListener("submit",(e)=>{ e.preventDefault(); const inp=$("#typeBox input"); const v=inp.value; inp.value=""; $("#typeBox").style.display="none"; handleText(v); });
+</script>
+</body>
+</html>
