@@ -24,10 +24,10 @@ button.grigio{background:#333;color:#fff}
 <h1>AXEL - SERIO</h1>
 <div id="cerchio">🎤</div>
 <p id="stato">PARTO DA SOLO...</p>
-<p style="font-size:13px;color:#00ff9d">✅ Server serio attivo - Nessuna chiave nel browser</p>
+<p style="font-size:13px;color:#00ff9d">✅ SENZA CHIAVE - SENZA .env - FUNZIONA SEMPRE</p>
 <div id="live">Sto per partire...</div>
 <div id="log">LOG:<br>• Avvio...</div>
-<div id="risposta">Ciao signore. Ora sono serio. Il cervello sta nel server, non nel browser. Dimmi pure qualsiasi cosa.</div>
+<div id="risposta">Ciao signore. Ora sono serio e senza chiave. Dimmi pure qualsiasi cosa.</div>
 <br>
 <input id="domanda" placeholder="Scrivi qui... e premi Invio">
 <br><br>
@@ -36,7 +36,6 @@ button.grigio{background:#333;color:#fff}
 </div>
 <script>
 let streamMicrofono = null;
-let staParlando = false;
 let inTurno = false;
 function log(t){
   var el = document.getElementById("log");
@@ -57,7 +56,6 @@ function parla(testo){
     document.getElementById("risposta").textContent = testo;
     if(!("speechSynthesis" in window)){ res(); return; }
     try{ window.speechSynthesis.cancel(); }catch(e){}
-    staParlando = true;
     mutaMicrofono(true);
     var u = new SpeechSynthesisUtterance(testo);
     u.lang = "it-IT"; u.rate = 0.92; u.volume = 0.9;
@@ -68,7 +66,6 @@ function parla(testo){
     function finisci(){
       if(finito) return;
       finito = true;
-      staParlando = false;
       mutaMicrofono(false);
       res();
     }
@@ -92,7 +89,7 @@ async function sbloccaTutto(){
 function ascoltaUnaVolta(secondi){
   return new Promise(function(res){
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){ log("Browser senza riconoscimento vocale, usa Chrome"); res(""); return; }
+    if(!SR){ log("Usa Chrome, questo browser non ha voce"); res(""); return; }
     var rec = new SR();
     rec.lang = "it-IT";
     rec.continuous = false;
@@ -159,7 +156,6 @@ async function testCervello(){
   var r = await pensa("cos'è un computer? Spiegamelo in modo semplice.");
   parla(r);
 }
-// ORA CHIAMA IL SERVER, NON GROQ DIRETTAMENTE - QUI ERA IL PROBLEMA
 async function pensa(domanda){
   try{
     log("Mando al server: " + domanda);
@@ -177,10 +173,10 @@ async function pensa(domanda){
   }
 }
 window.addEventListener("load", async function(){
-  log("Avvio serio...");
+  log("Avvio serio senza chiave...");
   var ok = await tieniMicrofonoAperto();
   if(ok){
-    await parla("Ciao signore. Ora sono serio. Il cervello sta nel server.");
+    await parla("Ciao signore. Ora sono serio e senza chiave.");
     cicloAxel();
   } else {
     log("Premi SBLOCCA VOCE + MICROFONO");
