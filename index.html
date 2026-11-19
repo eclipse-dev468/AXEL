@@ -10,18 +10,16 @@
 body{margin:0;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center}
 #dopo{padding:18px;max-width:760px;margin:0 auto}
 h1{font-size:32px;letter-spacing:6px;margin:8px}
-#stato{font-size:16px;min-height:22px;color:#888}
+#stato{font-size:17px;min-height:24px;color:#888}
 #stato.sveglio{color:#00e5ff}
 #live{font-size:17px;color:#ffcc00;min-height:24px;background:#1a1a00;border:1px solid #333;border-radius:10px;padding:8px;margin:8px 0}
 #micBox{background:#111;border:1px solid #333;border-radius:12px;padding:12px;margin:10px 0;text-align:left}
 #micBarraBg{background:#333;height:22px;border-radius:99px;overflow:hidden}
 #micBarra{background:#00ff9d;height:100%;width:0%}
-#micTesto{font-size:14px;color:#aaa;margin-top:6px}
-#avviso{background:#331111;border:1px solid #ff5555;border-radius:12px;padding:12px;font-size:14px;margin:10px 0;text-align:left}
-#log{background:#0a0a0a;border:1px solid #222;border-radius:12px;padding:12px;text-align:left;font-size:14px;min-height:70px;max-height:110px;overflow:auto;color:#aaa}
-#risposta{font-size:21px;line-height:1.5;min-height:120px;background:#111;border:1px solid #333;border-radius:16px;padding:18px;text-align:left;white-space:pre-wrap;margin-top:10px}
+#log{background:#0a0a0a;border:1px solid #222;border-radius:12px;padding:12px;text-align:left;font-size:14px;min-height:70px;max-height:120px;overflow:auto;color:#aaa}
+#risposta{font-size:21px;line-height:1.5;min-height:130px;background:#111;border:1px solid #333;border-radius:16px;padding:18px;text-align:left;white-space:pre-wrap;margin-top:10px}
 #domanda{width:100%;padding:14px;border-radius:99px;border:1px solid #00e5ff;background:#111;color:#fff;font-size:18px;box-sizing:border-box}
-button{padding:12px 18px;font-size:15px;border-radius:99px;border:0;background:#00e5ff;cursor:pointer;margin:5px;font-weight:700}
+button{padding:13px 20px;font-size:16px;border-radius:99px;border:0;background:#00e5ff;cursor:pointer;margin:5px;font-weight:700}
 button.grigio{background:#333;color:#fff}
 #cerchio{width:80px;height:80px;border-radius:50%;margin:10px auto;border:3px solid #00ff9d;display:flex;align-items:center;justify-content:center;font-size:28px}
 </style>
@@ -29,44 +27,30 @@ button.grigio{background:#333;color:#fff}
 <body>
 
 <div id="dopo">
-<h1>AXEL - ANTI-ECO</h1>
+<h1>AXEL - COME TE</h1>
 <div id="cerchio">🎤</div>
 <p id="stato">PARTO DA SOLO...</p>
-
-<div id="avviso">
-<b>⚠️ SE LA BARRA VA A 100% E RESTA LÌ, È ECO:</b><br>
-Vuol dire che il microfono sente le casse. Fai così:<br>
-1) Usa le <b>cuffie</b> se ce le hai - è la soluzione migliore<br>
-2) Oppure <b>abbassa il volume</b> del PC a metà<br>
-3) Oppure allontanati dalle casse<br>
-Quando parli TU, la barra deve salire e scendere. Quando parla AXEL, la barra deve stare bassa perché ora lo muto io.
-</div>
-
 <div id="micBox">
-<b>🎤 MICROFONO</b>
+<b>🎤 MICROFONO - se parli, la barra si muove</b>
 <div id="micBarraBg"><div id="micBarra"></div></div>
-<p id="micTesto">Parla e guarda...</p>
+<p id="micTesto" style="font-size:13px;color:#aaa">Quando parlo io, mi muto da solo così non sento me stesso.</p>
 </div>
-
 <div id="live">Sto per partire...</div>
 <div id="log">LOG:<br>• Avvio...</div>
-<div id="risposta">Ciao signore. Ora ho l'anti-eco. Quando parlo io, spengo il microfono, così non sento me stesso.</div>
+<div id="risposta">Ciao signore. Ora faccio come fa lui con te: ti ascolto, rispondo, poi torno ad ascoltarti. A turni, senza bloccarmi.</div>
 <br>
 <input id="domanda" placeholder="Se la voce non va, scrivi qui... e premi Invio">
 <br><br>
-<button onclick="sbloccaTutto()">🔄 SBLOCCA - ALTRA DOMANDA</button>
-<button class="grigio" onclick="provaMicrofono()">🎤 PROVA MICROFONO</button>
+<button onclick="faiAltraDomanda()">🔄 FAMMI FARE UN'ALTRA DOMANDA</button>
+<button class="grigio" onclick="sbloccaMicrofono()">🔓 SBLOCCA MICROFONO</button>
+<p style="font-size:13px;opacity:.6">Se usi le cuffie, non c'è più eco e sente molto meglio.</p>
 </div>
 
 <script>
-let rec = null;
-let modalita = "dorme";
-let staParlando = false;
 let streamMicrofono = null;
-let staAscoltando = false;
-let domandaInCorso = false;
+let staParlando = false;
 let audioCtx = null, analyser = null;
-let timerDorme = null;
+let inTurno = false;
 
 function log(t){
   var el = document.getElementById("log");
@@ -78,13 +62,9 @@ function setStato(testo, classe){
   s.textContent = testo;
   s.className = classe || "";
 }
-
-// MUTA IL MICROFONO QUANDO PARLA AXEL - così non sente se stesso
 function mutaMicrofono(muta){
   if(!streamMicrofono) return;
-  streamMicrofono.getTracks().forEach(function(track){ track.enabled = !muta; });
-  if(muta) log("Microfono MUTATO mentre parlo io - così non sento me stesso");
-  else log("Microfono RIACCESO - ora ti ascolto");
+  streamMicrofono.getTracks().forEach(function(tr){ tr.enabled = !muta; });
 }
 
 function parla(testo){
@@ -93,9 +73,7 @@ function parla(testo){
     if(!("speechSynthesis" in window)){ res(); return; }
     try{ window.speechSynthesis.cancel(); }catch(e){}
     staParlando = true;
-    mutaMicrofono(true); // ANTI-ECO: spengo il microfono mentre parlo
-    try{ if(rec) rec.stop(); }catch(e){}
-    staAscoltando = false;
+    mutaMicrofono(true);
     var u = new SpeechSynthesisUtterance(testo);
     u.lang = "it-IT"; u.rate = 0.92; u.volume = 0.9;
     var voci = window.speechSynthesis.getVoices();
@@ -106,202 +84,188 @@ function parla(testo){
       if(finito) return;
       finito = true;
       staParlando = false;
-      mutaMicrofono(false); // RIACCENDO dopo aver parlato
-      // RESTO SVEGLIO 10 SECONDI PER LA SECONDA DOMANDA - senza ridire AXEL
-      modalita = "sveglio";
-      domandaInCorso = false;
-      setStato('SONO SVEGLIO - FAMMI SUBITO UN\'ALTRA DOMANDA (10 sec)', "sveglio");
-      log("Ho finito, resto sveglio 10 sec per la seconda domanda");
-      clearTimeout(timerDorme);
-      timerDorme = setTimeout(function(){
-        if(modalita === "sveglio" && !domandaInCorso){
-          modalita = "dorme";
-          setStato('DORMO... DI\' "AXEL"', "dorme");
-          log("Torno a dormire, dimmi Axel quando vuoi");
-        }
-      }, 10000);
-      setTimeout(avviaAscolto, 600);
+      mutaMicrofono(false);
       res();
     }
-    u.onend = finisci; u.onerror = finisci;
+    u.onend = finisci;
+    u.onerror = finisci;
     window.speechSynthesis.speak(u);
     setTimeout(finisci, 15000);
   });
 }
 
-function sbloccaTutto(){
-  log("Sblocco forzato");
-  modalita = "dorme"; domandaInCorso = false; staParlando = false;
-  mutaMicrofono(false);
-  try{ window.speechSynthesis.cancel(); }catch(e){}
-  try{ if(rec) rec.stop(); }catch(e){}
-  staAscoltando = false;
-  setStato('SBLOCCATO - DI\' "AXEL"', "dorme");
-  parla("Mi sono sbloccato signore. Dimmi di nuovo Axel.");
-  setTimeout(avviaAscolto, 600);
-}
-
 async function tieniMicrofonoAperto(){
   try{
     if(streamMicrofono) return true;
-    // ANTI-ECO VERO: echoCancellation, noiseSuppression, autoGainControl
     streamMicrofono = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
-      }
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
     });
-    log("Microfono aperto con ANTI-ECO");
+    log("Microfono aperto con anti-eco");
     return true;
   }catch(e){
-    log("Microfono BLOCCATO");
+    log("Microfono BLOCCATO - clicca lucchetto in alto e Consenti");
     return false;
   }
 }
 
-function avviaBarraMicrofono(){
-  if(!streamMicrofono) return;
+function avviaBarra(){
+  if(!streamMicrofono || audioCtx) return;
   try{
-    if(audioCtx) return;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    var sorgente = audioCtx.createMediaStreamSource(streamMicrofono);
+    var src = audioCtx.createMediaStreamSource(streamMicrofono);
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 512;
-    sorgente.connect(analyser);
+    src.connect(analyser);
     var dati = new Uint8Array(analyser.frequencyBinCount);
-    function aggiorna(){
+    function agg(){
       analyser.getByteFrequencyData(dati);
       var somma = 0;
       for(var i=0;i<dati.length;i++) somma += dati[i];
-      var media = somma / dati.length;
-      var perc = Math.min(100, media * 2);
+      var perc = Math.min(100, (somma / dati.length) * 2);
       var barra = document.getElementById("micBarra");
       barra.style.width = perc + "%";
-      if(staParlando){
-        barra.style.background = "#333";
-        document.getElementById("micTesto").textContent = "Sto parlando io - microfono mutato, barra bassa è normale";
-      } else if(perc > 90){
-        barra.style.background = "#ff4444";
-        document.getElementById("micTesto").textContent = "⚠️ ECO! Barra a 100% fissa = sente le casse. Usa le cuffie o abbassa il volume!";
-      } else if(perc > 5){
-        barra.style.background = "#00ff9d";
-        document.getElementById("micTesto").textContent = "TI SENTO! Volume: " + Math.round(perc) + "%";
-      } else {
-        barra.style.background = "#333";
-        document.getElementById("micTesto").textContent = "Silenzio... parla e la barra deve muoversi";
-      }
-      requestAnimationFrame(aggiorna);
+      if(staParlando){ barra.style.background = "#333"; }
+      else if(perc > 90){ barra.style.background = "#ff4444"; }
+      else if(perc > 5){ barra.style.background = "#00ff9d"; }
+      else { barra.style.background = "#333"; }
+      requestAnimationFrame(agg);
     }
-    aggiorna();
+    agg();
   }catch(e){}
 }
 
-async function provaMicrofono(){
-  streamMicrofono = null; audioCtx = null;
-  var ok = await tieniMicrofonoAperto();
-  if(ok){ avviaBarraMicrofono(); avviaAscolto(); }
-}
-
-function avviaAscolto(){
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR) return;
-  if(staParlando) return;
-  if(staAscoltando) return;
-  try{
-    rec = new SR();
+// ===== ASCOLTA UNA VOLTA SOLA - COME FACCIO IO CON TE =====
+// Non ascolto continuo che Chrome spegne, ascolto 8 secondi, poi mi fermo, poi ricomincio.
+// Così non si incastra mai.
+function ascoltaUnaVolta(secondi){
+  return new Promise(function(res){
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){ res(""); return; }
+    var rec = new SR();
     rec.lang = "it-IT";
-    rec.continuous = true;
+    rec.continuous = false; // UNA VOLTA SOLA, NON CONTINUO
     rec.interimResults = true;
-    staAscoltando = true;
+    var finito = false;
+    var timer = setTimeout(function(){ finisci(""); }, (secondi || 8) * 1000);
+    function finisci(testo){
+      if(finito) return;
+      finito = true;
+      clearTimeout(timer);
+      try{ rec.stop(); }catch(e){}
+      res(testo);
+    }
     rec.onresult = function(e){
-      if(staParlando) return;
       var finale = "";
       var provvisorio = "";
-      for(var i = e.resultIndex; i < e.results.length; i++){
+      for(var i=0;i<e.results.length;i++){
         if(e.results[i].isFinal) finale += e.results[i][0].transcript + " ";
         else provvisorio += e.results[i][0].transcript + " ";
       }
-      var daMostrare = (provvisorio || finale).trim();
-      if(daMostrare) document.getElementById("live").textContent = "STO SENTENDO: " + daMostrare;
+      var mostra = (provvisorio || finale).trim();
+      if(mostra) document.getElementById("live").textContent = "STO SENTENDO: " + mostra;
       if(finale.trim()){
-        // FILTRO ECO: se quello che sento è quello che ho appena detto io, lo ignoro
-        var appenaDetto = document.getElementById("risposta").textContent.toLowerCase().slice(0,60);
-        var sentito = finale.trim().toLowerCase();
-        if(appenaDetto && sentito.length > 10 && appenaDetto.includes(sentito.slice(0,20))){
-          log("Ignoro eco - è la mia voce, non la tua");
-          return;
-        }
         log("Ho capito: " + finale.trim());
-        if(domandaInCorso) return;
-        gestisciVoce(finale.trim());
+        finisci(finale.trim());
       }
     };
-    rec.onerror = function(e){ log("Errore: " + e.error); staAscoltando = false; };
-    rec.onend = function(){ staAscoltando = false; if(!staParlando) setTimeout(avviaAscolto, 400); };
-    rec.onstart = function(){ log("Ascolto attivo"); };
-    rec.start();
-  }catch(e){ staAscoltando = false; setTimeout(avviaAscolto, 800); }
+    rec.onerror = function(e){
+      log("Errore ascolto: " + e.error);
+      finisci("");
+    };
+    rec.onend = function(){ finisci(""); };
+    try{ rec.start(); }catch(e){ finisci(""); }
+  });
 }
 
-setInterval(function(){
-  if(staParlando) return;
-  if(!staAscoltando) avviaAscolto();
-}, 3000);
-
-async function gestisciVoce(testo){
-  var basso = testo.toLowerCase();
-  var haDettoAxel = basso.includes("axel") || basso.includes("accel") || basso.includes("exel") || basso.includes("axl");
-  if(modalita === "dorme"){
-    if(haDettoAxel){
+// ===== CICLO PRINCIPALE - COME UNA CONVERSAZIONE VERA =====
+async function cicloAxel(){
+  if(inTurno) return;
+  inTurno = true;
+  while(true){
+    try{
+      // 1. ASPETTA "AXEL"
+      setStato('DORMO... DI\' "AXEL"', "");
+      document.getElementById("live").textContent = "Dormo... dimmi Axel";
+      var sveglia = await ascoltaUnaVolta(10);
+      var bassoSveglia = (sveglia || "").toLowerCase();
+      var haDettoAxel = bassoSveglia.includes("axel") || bassoSveglia.includes("accel") || bassoSveglia.includes("exel") || bassoSveglia.includes("axl");
+      if(!haDettoAxel){
+        // Se non hai detto Axel, ricomincio subito, senza bloccarmi
+        continue;
+      }
       log("!!! AXEL RILEVATO !!!");
-      modalita = "sveglio";
       setStato("SONO SVEGLIO - DIMMI LA DOMANDA", "sveglio");
       await parla("Dimmi signore, ti ascolto.");
+
+      // 2. ASPETTA LA DOMANDA - hai 10 secondi, poi se non parli torno a dormire
       setStato("TI ASCOLTO - FAMMI LA DOMANDA", "sveglio");
-      clearTimeout(timerDorme);
-      timerDorme = setTimeout(function(){
-        if(modalita === "sveglio" && !domandaInCorso){
-          modalita = "dorme";
-          setStato('DORMO... DI\' "AXEL"', "dorme");
+      document.getElementById("live").textContent = "Ti ascolto... fai la domanda";
+      var domanda = await ascoltaUnaVolta(10);
+      domanda = (domanda || "").replace(/axel/gi,"").replace(/accel/gi,"").trim();
+      if(!domanda){
+        log("Nessuna domanda, torno a dormire");
+        setStato('DORMO... DI\' "AXEL"', "");
+        continue;
+      }
+
+      // 3. PENSA E RISPONDI
+      setStato("STO PENSANDO...", "sveglio");
+      log("Domanda: " + domanda);
+      var risposta = await pensa(domanda);
+      await parla(risposta);
+
+      // 4. RESTO SVEGLIO PER LA SECONDA DOMANDA - senza ridire Axel
+      // Questo è il punto che prima mancava: dopo la prima risposta tornava a dormire subito
+      setStato("SONO ANCORA SVEGLIO - FAMMI SUBITO UN'ALTRA DOMANDA", "sveglio");
+      document.getElementById("live").textContent = "Sono ancora sveglio, fammi un'altra domanda senza ridire Axel";
+      log("Resto sveglio per la seconda domanda...");
+      var domanda2 = await ascoltaUnaVolta(10);
+      domanda2 = (domanda2 || "").replace(/axel/gi,"").replace(/accel/gi,"").trim();
+      if(domanda2){
+        setStato("STO PENSANDO ALLA SECONDA DOMANDA...", "sveglio");
+        var risposta2 = await pensa(domanda2);
+        await parla(risposta2);
+        // E anche una terza, se vuoi
+        setStato("ANCORA SVEGLIO - UN'ALTRA?", "sveglio");
+        var domanda3 = await ascoltaUnaVolta(10);
+        domanda3 = (domanda3 || "").replace(/axel/gi,"").replace(/accel/gi,"").trim();
+        if(domanda3){
+          var risposta3 = await pensa(domanda3);
+          await parla(risposta3);
         }
-      }, 10000);
-    }
-    return;
-  }
-  // SE È GIÀ SVEGLIO, QUELLO CHE DICI È UNA DOMANDA - ANCHE SENZA RIDIRE AXEL
-  if(modalita === "sveglio" || modalita === "rispondo"){
-    if(basso.includes("vai a dormire") || basso.includes("basta così")){
-      modalita = "dorme";
-      setStato('DORMO... DI\' "AXEL"', "dorme");
-      await parla("Va bene signore, torno a dormire.");
-      return;
-    }
-    // Se la frase contiene ancora Axel, toglilo, è solo la sveglia, non la domanda
-    var domandaPulita = testo.replace(/axel/gi,"").replace(/accel/gi,"").trim();
-    if(!domandaPulita) return;
-    domandaInCorso = true;
-    modalita = "rispondo";
-    setStato("STO PENSANDO...", "sveglio");
-    try{
-      var risposta = await pensa(domandaPulita);
-      await parla(risposta); // parla() ti rimette in sveglio per 10 sec, così puoi fare subito la seconda domanda
+      }
+      log("Torno a dormire, dimmi Axel quando vuoi");
+      // Torna all'inizio del while, a dormire, e ricomincia da solo
     }catch(e){
-      await parla("Scusa signore, mi ero bloccato. Dimmi di nuovo la domanda.");
+      log("Errore ciclo: " + e.message + " - riparto da solo");
+      await new Promise(function(r){ setTimeout(r, 1000); });
     }
-    domandaInCorso = false;
   }
+}
+
+function faiAltraDomanda(){
+  log("Hai premuto SBLOCCA - riparto");
+  // Forza un nuovo turno: se era bloccato, riparte
+  // Non devo ricaricare, riparto dal ciclo
+  parla("Ok signore, sono qui. Dimmi di nuovo Axel e fammi la domanda.").then(function(){
+    // Il ciclo sta già girando, non devo fare niente
+  });
+}
+
+async function sbloccaMicrofono(){
+  var ok = await tieniMicrofonoAperto();
+  if(ok){ avviaBarra(); parla("Microfono sbloccato signore. Ora dì solo Axel."); }
 }
 
 window.addEventListener("load", async function(){
   log("Avvio...");
   var ok = await tieniMicrofonoAperto();
   if(ok){
-    avviaBarraMicrofono();
-    modalita = "dorme";
-    setStato('DORMO... DI\' "AXEL"', "dorme");
-    await parla("Ciao signore. Ora ho l'anti-eco. Quando parlo io, mi muto da solo.");
-    avviaAscolto();
+    avviaBarra();
+    await parla("Ciao signore. Ora faccio come lui: ti ascolto, rispondo, poi ti ascolto di nuovo. Dì solo Axel.");
+    cicloAxel();
+  } else {
+    setStato("MICROFONO BLOCCATO - clicca lucchetto in alto", "");
   }
 });
 
@@ -331,7 +295,7 @@ async function pensa(domanda){
   if(q.includes("che ore")) return "Sono le " + new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) + ", signore.";
   if(q.includes("che giorno")) return "Oggi è " + new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + ", signore.";
   var r = await cervello1(domanda);
-  if(!r) r = "Signore, il cervello era occupato, dimmi di nuovo la domanda.";
+  if(!r) r = "Signore, il cervello era occupato, rifammi la domanda.";
   return r;
 }
 document.getElementById("domanda").addEventListener("keydown", async function(e){
@@ -339,9 +303,7 @@ document.getElementById("domanda").addEventListener("keydown", async function(e)
     var v = e.target.value;
     e.target.value = "";
     log("Hai scritto: " + v);
-    domandaInCorso = true;
     var r = await pensa(v);
-    domandaInCorso = false;
     parla(r);
   }
 });
