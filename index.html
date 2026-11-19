@@ -10,11 +10,12 @@ body{margin:0;background:#000;color:#fff;font-family:system-ui,sans-serif;text-a
 #gate b{font-size:70px;letter-spacing:14px}
 #gate span{margin-top:15px;color:#00e5ff;font-size:20px}
 #gate button{margin-top:30px;padding:18px 35px;font-size:22px;border-radius:99px;border:0;background:#00e5ff;font-weight:800;cursor:pointer}
-#dopo{display:none;padding:20px;max-width:720px;margin:0 auto}
-h1{font-size:36px;letter-spacing:6px}
+#dopo{display:none;padding:20px;max-width:740px;margin:0 auto}
+h1{font-size:36px;letter-spacing:6px;margin:10px}
 #stato{color:#00ff9d;font-size:14px;min-height:20px}
 #sentito{color:#aaa;min-height:22px}
-#risposta{font-size:21px;line-height:1.5;min-height:160px;background:#111;border:1px solid #333;border-radius:16px;padding:20px;text-align:left;white-space:pre-wrap}
+#debug{color:#ffcc00;font-size:12px;min-height:18px}
+#risposta{font-size:21px;line-height:1.5;min-height:170px;background:#111;border:1px solid #333;border-radius:16px;padding:20px;text-align:left;white-space:pre-wrap}
 #domanda{width:100%;padding:14px;border-radius:99px;border:1px solid #00e5ff;background:#111;color:#fff;font-size:18px;box-sizing:border-box}
 button{padding:13px 20px;font-size:16px;border-radius:99px;border:0;background:#00e5ff;cursor:pointer;margin:6px;font-weight:700}
 button.grigio{background:#333;color:#fff}
@@ -26,7 +27,7 @@ button.grigio{background:#333;color:#fff}
 <b>AXEL</b>
 <span>CLICCA QUI PER INIZIALIZZARE</span>
 <p style="opacity:.6">Clicca, poi parla o scrivi</p>
-<button onclick="document.getElementById('gate').style.display='none';document.getElementById('dopo').style.display='block';parla('Ciao, sono Axel. Ora ho un cervello vero, come quello di un AI. Chiedimi qualsiasi cosa.')">▶️ CLICCA QUI PER INIZIALIZZARE</button>
+<button onclick="document.getElementById('gate').style.display='none';document.getElementById('dopo').style.display='block';parla('Ciao signore, sono Axel. Ora ho un cervello AI vero. Chiedimi qualsiasi cosa, ti rispondo io.')">▶️ CLICCA QUI PER INIZIALIZZARE</button>
 <p style="opacity:.5;font-size:13px">Se non va, premi INVIO</p>
 </div>
 
@@ -34,16 +35,18 @@ button.grigio{background:#333;color:#fff}
 <h1>AXEL</h1>
 <p id="stato">PRONTO</p>
 <p id="sentito"></p>
-<div id="risposta">Ciao, sono Axel. Ora ho un cervello vero. Non ho più risposte scritte a mano. Chiedimi qualsiasi cosa tu voglia sapere: una parola, una persona, un luogo, un perché, un come si fa. Ti rispondo io, come fa un AI.</div>
+<p id="debug"></p>
+<div id="risposta">Ciao signore, sono Axel. Ora ho un cervello AI collegato. Non ho più frasi scritte a mano. Ogni domanda la mando al cervello e ti rispondo. Chiedimi quello che vuoi tu.</div>
 <br>
 <input id="domanda" placeholder="Scrivi qualsiasi cosa... e premi Invio">
 <br><br>
-<button onclick="ascolta()">🎤 PARLA - PREMI QUI</button>
+<button onclick="ascolta()">🎤 PARLA</button>
 <button onclick="provaVoce()">🔊 PROVA VOCE</button>
 <button class="grigio" onclick="sbloccaMicrofono()">🔓 SBLOCCA MICROFONO</button>
 </div>
 
 <script>
+function setDebug(t){ document.getElementById("debug").textContent = t; }
 function parla(testo){
   document.getElementById("risposta").textContent = testo;
   if(!("speechSynthesis" in window)) return;
@@ -56,12 +59,12 @@ function parla(testo){
   if(it) u.voice = it;
   window.speechSynthesis.speak(u);
 }
-function provaVoce(){ parla("Mi senti? Sono Axel, ora ho un cervello vero."); }
+function provaVoce(){ parla("Mi senti signore? Sono Axel, ora ho un cervello vero."); }
 
 document.getElementById("gate").addEventListener("click", function(){
   document.getElementById("gate").style.display = "none";
   document.getElementById("dopo").style.display = "block";
-  parla("Ciao, sono Axel. Ora ho un cervello vero. Chiedimi qualsiasi cosa.");
+  parla("Ciao signore, sono Axel. Ora ho un cervello AI. Chiedimi qualsiasi cosa.");
 });
 document.addEventListener("keydown", function(e){
   if(e.key === "Enter" || e.key === " "){
@@ -69,20 +72,19 @@ document.addEventListener("keydown", function(e){
     if(g && g.style.display !== "none"){
       g.style.display = "none";
       document.getElementById("dopo").style.display = "block";
-      parla("Ciao, sono Axel. Sono partito. Chiedimi qualsiasi cosa.");
+      parla("Ciao signore, sono partito. Chiedimi qualsiasi cosa.");
     }
   }
 });
 
 async function sbloccaMicrofono(){
-  document.getElementById("stato").textContent = "CHIEDO PERMESSO...";
   try{
     var s = await navigator.mediaDevices.getUserMedia({audio:true});
     s.getTracks().forEach(t => t.stop());
     document.getElementById("stato").textContent = "MICROFONO SBLOCCATO!";
-    parla("Microfono sbloccato. Ora premi Parla.");
+    parla("Microfono sbloccato signore.");
   }catch(e){
-    document.getElementById("risposta").textContent = "Chrome ha bloccato il microfono. In alto a sinistra, vicino a localhost, clicca il lucchetto, poi Microfono, poi Consenti. Poi premi Ctrl + Shift + R.";
+    document.getElementById("risposta").textContent = "Chrome ha bloccato il microfono. In alto a sinistra vicino a localhost, clicca il lucchetto, poi Microfono, poi Consenti. Poi Ctrl + Shift + R.";
     parla("Microfono bloccato. Clicca il lucchetto in alto e metti Consenti.");
   }
 }
@@ -90,7 +92,7 @@ async function sbloccaMicrofono(){
 let rec = null;
 function ascolta(){
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ parla("Usa Chrome per parlare. Intanto scrivi la domanda."); return; }
+  if(!SR){ parla("Usa Chrome per parlare. Intanto scrivi."); return; }
   document.getElementById("stato").textContent = "TI ASCOLTO... PARLA ORA";
   try{
     if(rec) try{ rec.stop(); }catch(e){}
@@ -102,27 +104,25 @@ function ascolta(){
       rispondi(testo);
     };
     rec.onerror = function(e){
-      if(e.error === "not-allowed") parla("Microfono bloccato. Premi Sblocca Microfono e metti Consenti.");
-      else if(e.error === "no-speech") parla("Non ti ho sentito. Riprova più vicino, oppure scrivi.");
+      if(e.error === "not-allowed") parla("Microfono bloccato. Premi Sblocca Microfono.");
+      else if(e.error === "no-speech") parla("Non ti ho sentito signore, riprova oppure scrivi.");
     };
     rec.start();
   }catch(e){ parla("Errore microfono. Scrivi la domanda."); }
 }
 
-// ========== CERVELLO VERO - COME IL MIO ==========
-// Io so le cose perché uso un modello AI che ragiona.
-// Ora AXEL usa lo stesso tipo di modello, gratis, senza chiave.
-// Non ha più frasi scritte a mano. Pensa ogni volta.
-
-async function chiediAlCervello(domanda){
+// ===== CERVELLO AI - 3 CERVELLI DI RISERVA, COME IL MIO =====
+async function cervello1(domanda){
+  // Cervello 1 - Pollinations OpenAI - gratis, senza chiave
   try{
+    setDebug("Cervello 1: sto pensando...");
     var r = await fetch("https://text.pollinations.ai/openai", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         model: "openai",
         messages: [
-          {role: "system", content: "Sei AXEL, un assistente personale italiano, come Jarvis. Sei intelligente, sai tutto: scienza, storia, scuola, sport, musica, tecnologia, vita quotidiana, tutto. Rispondi sempre in italiano, in modo semplice, chiaro, come parleresti a un ragazzo. Rispondi in massimo 5 frasi, ma complete. Non dire mai 'non so', prova sempre a spiegare. Non dire mai 'faccio la ricerca'. Rispondi direttamente. Chiamalo sempre e solo signore, mai con altri nomi."},
+          {role: "system", content: "Sei AXEL, assistente personale italiano, come Jarvis. Sei intelligente, sai tutto: scienza, storia, scuola, tecnologia, sport, musica, vita, tutto. Rispondi sempre in italiano, semplice, chiaro, come un amico intelligente. Massimo 6 frasi, complete. Non dire mai non so, spiega sempre. Non dire mai faccio la ricerca. Rispondi direttamente. Chiamalo sempre e solo signore."},
           {role: "user", content: domanda}
         ],
         temperature: 0.7
@@ -131,24 +131,43 @@ async function chiediAlCervello(domanda){
     if(!r.ok) return null;
     var d = await r.json();
     var t = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-    if(t && t.trim().length > 5) return t.trim().slice(0, 1500);
-    return null;
+    if(t && t.trim().length > 5) return t.trim();
   }catch(e){ return null; }
+  return null;
 }
 
-// Se il cervello AI è occupato, prova 【entity-Wikipedia¦canonical_name=Wikipedia】 - ma solo come seconda scelta
-async function cercaWikipedia(domanda){
+async function cervello2(domanda){
+  // Cervello 2 - Pollinations semplice - se il primo è occupato
   try{
-    var parola = domanda.toLowerCase().replace(/cos'è/g,"").replace(/cosa è/g,"").replace(/che cos'è/g,"").replace(/chi è/g,"").replace(/chi era/g,"").replace(/parlami di/g,"").replace(/dimmi di/g,"").replace(/spiegami/g,"").replace(/\?/g,"").trim() || domanda;
+    setDebug("Cervello 1 occupato, provo cervello 2...");
+    var r = await fetch("https://text.pollinations.ai/" + encodeURIComponent("Sei AXEL, assistente italiano intelligente, sai tutto. Rispondi in italiano, semplice, 5 frasi, chiamalo solo signore. Domanda: " + domanda));
+    if(!r.ok) return null;
+    var t = await r.text();
+    if(t && t.length > 20) return t.slice(0,1500);
+  }catch(e){ return null; }
+  return null;
+}
+
+async function cervello3(domanda){
+  // Cervello 3 - 【entity-Wikipedia¦canonical_name=Wikipedia】 + DuckDuckGo
+  try{
+    setDebug("Provo 【entity-Wikipedia¦canonical_name=Wikipedia】...");
+    var parola = domanda.toLowerCase().replace(/cos'è/g,"").replace(/cosa è/g,"").replace(/che cos'è/g,"").replace(/chi è/g,"").replace(/chi era/g,"").replace(/parlami di/g,"").replace(/dimmi/g,"").replace(/spiegami/g,"").replace(/\?/g,"").trim() || domanda;
     var url = "https://it.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&origin=*&titles=" + encodeURIComponent(parola);
     var r = await fetch(url);
     var d = await r.json();
     var pages = d.query.pages;
     var key = Object.keys(pages)[0];
     var testo = pages[key].extract;
-    if(!testo || testo.length < 30) return null;
-    return testo.split(". ").slice(0,5).join(". ") + ".";
-  }catch(e){ return null; }
+    if(testo && testo.length > 30) return testo.split(". ").slice(0,5).join(". ") + ".";
+  }catch(e){}
+  try{
+    setDebug("Provo DuckDuckGo...");
+    var r2 = await fetch("https://api.duckduckgo.com/?q=" + encodeURIComponent(domanda) + "&format=json&no_html=1&skip_disambig=1");
+    var d2 = await r2.json();
+    if(d2.AbstractText) return d2.AbstractText.slice(0,1000);
+  }catch(e){}
+  return null;
 }
 
 async function rispondi(domanda){
@@ -158,20 +177,24 @@ async function rispondi(domanda){
   var q = domanda.toLowerCase();
   var risposta = "";
 
-  // Solo orologio e data, il resto va al cervello
-  if(q.includes("che ore")) risposta = "Sono le " + new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
-  else if(q.includes("che giorno") || q.includes("che data")) risposta = "Oggi è " + new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  if(q.includes("che ore")) risposta = "Sono le " + new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) + ", signore.";
+  else if(q.includes("che giorno") || q.includes("che data")) risposta = "Oggi è " + new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + ", signore.";
   else if(q.includes("quanto fa")){
     try{
       var expr = domanda.replace(/quanto fa/gi,"").replace(/più/gi,"+").replace(/per/gi,"*").replace(/diviso/gi,"/").replace(/meno/gi,"-").replace(/x/gi,"*");
-      risposta = "Fa " + Function("return (" + expr + ")")() + ".";
+      risposta = "Fa " + Function("return (" + expr + ")")() + ", signore.";
     }catch(e){}
   }
 
-  // TUTTO IL RESTO VA AL CERVELLO VERO, COME FACCIO IO
-  if(!risposta) risposta = await chiediAlCervello(domanda);
-  if(!risposta) risposta = await cercaWikipedia(domanda);
-  if(!risposta) risposta = "Il mio cervello in questo momento è occupato, signore. Riprova tra 5 secondi, premendo di nuovo Invio. A volte succede quando tanta gente lo usa insieme.";
+  if(!risposta) risposta = await cervello1(domanda);
+  if(!risposta) risposta = await cervello2(domanda);
+  if(!risposta) risposta = await cervello3(domanda);
+  if(!risposta){
+    risposta = "Signore, i cervelli in questo momento sono tutti occupati perché tanta gente li sta usando. Aspetta 10 secondi e chiedimelo di nuovo, premendo Invio. Non è che non so, è che sono intasati.";
+    setDebug("Tutti i cervelli occupati, riprova tra 10 secondi");
+  } else {
+    setDebug("Risposta dal cervello AI - pronta");
+  }
 
   document.getElementById("stato").textContent = "PRONTO - CHIEDIMI ALTRO";
   parla(risposta);
