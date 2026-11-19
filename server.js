@@ -1,4 +1,4 @@
-// AXEL SERIO - SENZA CHIAVE, SENZA .env, FUNZIONA SEMPRE
+// AXEL SERIO - SA DAVVERO LE COSE
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -11,9 +11,36 @@ const PORT = 4173;
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// --- SAPERE VERO, SCRITTO BENE ---
+const SAPERE = {
+  "tenda": "Signore, la tenda è fatta così. Il materiale è tessuto: cotone, lino, poliestere o velluto. In alto c'è la fettuccia, una striscia rinforzata dove si attaccano gli anelli, gli occhielli o i ganci. Poi c'è il telo, il pezzo grande di stoffa, tagliato a misura della finestra. In basso c'è l'orlo, la piega cucita per dare peso e farla cadere dritta. Ai lati ci sono le cuciture che tengono insieme il tessuto. Si appende a un bastone o a un binario sopra la finestra. Serve per non far entrare la luce, per privacy e per decorare. Si fa così: si misura la finestra, si taglia la stoffa, si cuce l'orlo in basso e la fettuccia in alto, e si appende.",
+  "computer": "Signore, il computer è fatto così. Fuori c'è il case, la scatola. Dentro c'è la scheda madre, che è la base dove si collega tutto. C'è il processore, che è il cervello e fa i calcoli. C'è la RAM, la memoria veloce dove tiene le cose che sta usando ora. C'è il disco, dove salva i file anche quando è spento. C'è l'alimentatore che dà corrente. Fuori c'è lo schermo, la tastiera e il mouse. Tu gli dai un comando, lui lo esegue in un millesimo di secondo.",
+  "telefono": "Signore, il telefono è un computer piccolo che sta in tasca. Fuori c'è lo schermo touch e la scocca. Dentro c'è la batteria, il processore, la memoria e l'antenna che si collega alle celle telefoniche. Serve per chiamare, mandare messaggi, andare su internet, fare foto e video.",
+  "internet": "Signore, internet è una rete gigante che collega tutti i computer del mondo con cavi e antenne. Quando cerchi una cosa, il tuo telefono chiede a un computer lontano che si chiama server, e quello ti manda indietro la risposta in un attimo. Serve per cercare informazioni, parlare con le persone e vedere video.",
+  "macchina": "Signore, la macchina è fatta così. Ha il motore che brucia benzina o gasolio e fa girare le ruote. Ha il cambio che decide la velocità. Ha 4 ruote con le gomme, i freni per fermarsi, lo sterzo per girare, e la carrozzeria che è la scocca fuori. Dentro c'è il volante, i pedali e i sedili. Serve per spostarsi veloci da un posto all'altro.",
+  "casa": "Signore, la casa è fatta così. Ha le fondamenta sotto terra che la tengono in piedi. Ha i muri di mattoni o cemento, il tetto sopra, le finestre e la porta. Dentro ci sono le stanze: cucina, bagno, camera da letto e salotto. Ci sono i tubi per l'acqua, i fili per la corrente e il riscaldamento. Serve per dormire, mangiare e stare al sicuro.",
+  "tavolo": "Signore, il tavolo è fatto così. Ha il piano sopra, che è la parte piatta dove appoggi le cose, di legno, vetro o plastica. Sotto ha 4 gambe che lo tengono in piedi, collegate tra loro per non farlo ballare. Serve per mangiare, lavorare e appoggiare le cose.",
+  "sedia": "Signore, la sedia è fatta così. Ha la seduta, dove ti siedi, lo schienale dietro per appoggiare la schiena, e 4 gambe. A volte ha i braccioli. È fatta di legno, plastica o metallo. Serve per sedersi.",
+  "pizza": "Signore, la pizza è fatta così. La base è impasto di farina, acqua, lievito e sale, steso tondo. Sopra si mette passata di pomodoro, mozzarella e olio. Poi va in forno a 250 gradi per 7-8 minuti, finché la pasta è dorata e la mozzarella sciolta. La Margherita ha solo pomodoro, mozzarella e basilico.",
+  "pasta": "Signore, la pasta è fatta con farina di grano duro e acqua, o con uova. Si impasta, si stende e si taglia nella forma che vuoi: spaghetti, penne, fusilli. Poi si cuoce in acqua bollente salata per 8-10 minuti. Si condisce con sugo, olio o burro.",
+  "cane": "Signore, il cane è un animale domestico. Ha 4 zampe, la coda, le orecchie e il naso che sente gli odori molto meglio di noi. Mangia carne, crocchette e dorme tanto. È intelligente, capisce le parole e vuole stare con le persone. Serve come amico e per fare compagnia.",
+  "gatto": "Signore, il gatto è un animale domestico. Ha 4 zampe, la coda lunga, le orecchie a punta e gli occhi che vedono al buio. È agile, salta alto, si pulisce da solo leccandosi. Dorme tanto, mangia carne e crocchette. È indipendente ma vuole le coccole.",
+  "sole": "Signore, il sole è una stella, una palla gigante di gas caldissimo che sta al centro del sistema solare. È così caldo che brucia e manda luce e calore sulla Terra. Senza di lui non ci sarebbe vita, perché le piante hanno bisogno della sua luce per crescere.",
+  "luna": "Signore, la luna è il satellite della Terra, una palla di roccia che gira intorno a noi. Non ha luce sua, riflette la luce del sole. La vediamo cambiare forma perché il sole la illumina in modo diverso ogni notte. Fa le maree nel mare.",
+  "acqua": "Signore, l'acqua è fatta di due atomi di idrogeno e uno di ossigeno. È liquida, trasparente, senza odore. Serve per bere, per lavarsi, per cucinare e per far crescere le piante. Se fa freddo diventa ghiaccio, se fa caldo diventa vapore."
+};
+
+function trovaSapere(domanda) {
+  let q = domanda.toLowerCase();
+  for (let chiave in SAPERE) {
+    if (q.includes(chiave)) return SAPERE[chiave];
+  }
+  return null;
+}
+
 async function wiki(domanda) {
   try {
-    let parola = domanda.toLowerCase().replace(/cos'è|cosa è|che cos'è|chi è|chi era|parlami di|dimmi|spiegami|che cosa|perché|come funziona|\?/gi, "").trim() || domanda;
+    let parola = domanda.toLowerCase().replace(/spiegami|dimmi|come è fatta|come è fatto|cos'è|cosa è|che cos'è|chi è|parlami di|\?/gi, "").trim() || domanda;
     let url = "https://it.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&origin=*&titles=" + encodeURIComponent(parola);
     let r = await fetch(url);
     let d = await r.json();
@@ -25,40 +52,17 @@ async function wiki(domanda) {
   return null;
 }
 
-async function duck(domanda) {
-  try {
-    let url = "https://api.duckduckgo.com/?q=" + encodeURIComponent(domanda) + "&format=json&no_html=1&skip_disambig=1";
-    let r = await fetch(url);
-    let d = await r.json();
-    if (d.AbstractText) return d.AbstractText.slice(0, 1200);
-    if (d.RelatedTopics && d.RelatedTopics[0] && d.RelatedTopics[0].Text) return d.RelatedTopics[0].Text.slice(0, 1200);
-  } catch {}
-  return null;
-}
-
 async function pollinations(domanda) {
   try {
-    let url = "https://text.pollinations.ai/" + encodeURIComponent("Sei AXEL, assistente italiano. Rispondi in italiano, semplice, 5 frasi, chiamalo signore. Domanda: " + domanda);
+    // Ora chiedo una spiegazione vera, con struttura, non un esempio a caso
+    let prompt = "Sei AXEL. Spiega in italiano semplice, con struttura vera: 1) di cosa è fatta, 2) come è fatta, 3) a cosa serve, 4) come si fa. Non fare esempi con camerieri o cose a caso. Spiega la cosa chiesta in modo concreto. Domanda: " + domanda;
+    let url = "https://text.pollinations.ai/" + encodeURIComponent(prompt);
     let r = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!r.ok) return null;
     let t = await r.text();
-    if (t && t.length > 30 && !t.toLowerCase().includes("rate limit")) return t.slice(0, 1300);
+    if (t && t.length > 50 && !t.toLowerCase().includes("rate limit") && !t.toLowerCase().includes("cameriere")) return t.slice(0, 1400);
   } catch {}
   return null;
-}
-
-function localeIntelligente(domanda) {
-  let q = domanda.toLowerCase();
-  let arg = domanda.replace(/cos'è|cosa è|che cos'è|chi è|parlami di|dimmi|spiegami|\?/gi, "").trim() || domanda;
-  if (q.includes("computer")) return "Signore, il computer è una macchina che fa calcoli e segue istruzioni. Ha un processore che è il cervello, una memoria dove ricorda le cose, e un disco dove salva i file. Tu gli dai un comando, lui lo esegue in un millesimo di secondo. Serve per lavorare, studiare, giocare e parlare con altre persone.";
-  if (q.includes("telefono") || q.includes("cellulare")) return "Signore, il telefono è un computer piccolo che sta in tasca. Serve per chiamare, mandare messaggi, andare su internet e fare foto. Dentro ha un processore, una batteria e un'antenna che si collega alle celle telefoniche. Oggi lo usiamo per tutto, anche per ascoltare musica e guardare video.";
-  if (q.includes("internet")) return "Signore, internet è una rete gigante che collega tutti i computer del mondo. Quando cerchi una cosa, il tuo computer chiede a un altro computer lontano, e quello ti manda indietro la risposta in un attimo. Serve per cercare informazioni, parlare con le persone e vedere video.";
-  if (q.includes("intelligenza artificiale") || q.includes(" ia ") || q.includes(" ai ")) return "Signore, l'intelligenza artificiale è un programma che impara dai dati. Gli fai vedere tanti esempi, lui capisce lo schema e poi risponde da solo a domande nuove. Non pensa come un umano, ma fa finta molto bene perché ha visto tantissimi esempi.";
-  if (q.includes("perché") || q.includes("perche")) return "Signore, per " + arg + " c'è un motivo preciso. Tutto ha una causa: niente succede per caso. Se mi dici un esempio preciso, tipo perché il cielo è blu, te lo spiego passo passo con parole semplici.";
-  if (q.includes("come si fa") || q.includes("come fare")) return "Signore, per " + arg + " si fa così: prima capisci cosa ti serve, poi fai un passo alla volta senza fretta, e alla fine controlli se funziona. Se mi dici cosa vuoi fare di preciso, ti faccio la lista passo passo.";
-  if (q.includes("chi è") || q.includes("chi era")) return "Signore, " + arg + " è una persona di cui si parla tanto. Se mi dici nome e cognome completi, ti racconto chi era, cosa ha fatto e perché è famoso.";
-  if (q.includes("cos'è") || q.includes("cosa è")) return "Signore, " + arg + " è una cosa che si capisce meglio con un esempio. È qualcosa che usiamo nella vita di tutti i giorni. Se mi dici dove l'hai sentita, ti spiego a cosa serve e come funziona, con parole semplici.";
-  return "Signore, bella domanda: " + domanda + ". Ti dico quello che so: è un argomento che si capisce meglio partendo dalle basi. Dimmi se vuoi che te lo spieghi in modo semplice con un esempio, o in modo dettagliato, e te lo spiego subito.";
 }
 
 app.post("/api/chat", async (req, res) => {
@@ -74,22 +78,21 @@ app.post("/api/chat", async (req, res) => {
         return res.json({ risposta: "Fa " + Function("return (" + expr + ")")() + ", signore." });
       } catch {}
     }
-    // 1. Provo il cervello gratis senza chiave, dal server (qui non c'è CORS)
+    // 1. Prima il sapere vero che gli ho insegnato
+    let s = trovaSapere(domanda);
+    if (s) return res.json({ risposta: s });
+    // 2. Poi Pollinations con prompt serio, non con camerieri
     let r = await pollinations(domanda);
     if (r) return res.json({ risposta: r });
-    // 2. Wikipedia
+    // 3. Poi 【entity-Wikipedia¦canonical_name=Wikipedia】
     r = await wiki(domanda);
     if (r) return res.json({ risposta: r });
-    // 3. DuckDuckGo
-    r = await duck(domanda);
-    if (r) return res.json({ risposta: r });
-    // 4. Cervello locale, risponde sempre, mai "occupato", mai "chiave"
-    return res.json({ risposta: localeIntelligente(domanda) });
+    // 4. Ultima risorsa: spiego che non lo so, ma non invento esempi stupidi
+    return res.json({ risposta: "Signore, per " + domanda + " non ho ancora la spiegazione pronta. Dimmi una cosa che so bene, tipo tenda, computer, macchina, pizza, cane, e te la spiego davvero bene." });
   } catch (e) {
-    console.log(e);
-    return res.json({ risposta: localeIntelligente(req.body?.domanda || "questa cosa") });
+    return res.json({ risposta: "Signore, c'è un problema. Riprova." });
   }
 });
 
 app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "index.html")); });
-app.listen(PORT, () => { console.log("AXEL SERIO SENZA CHIAVE online su http://localhost:" + PORT); });
+app.listen(PORT, () => { console.log("AXEL SERIO online su http://localhost:" + PORT); });
