@@ -3,17 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AXEL - SEMPRE IN ASCOLTO</title>
+<title>AXEL</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#000000">
 <style>
 body{margin:0;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center}
-#gate{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10}
-#gate b{font-size:70px;letter-spacing:14px}
-#gate span{margin-top:15px;color:#00e5ff;font-size:20px}
-#gate button{margin-top:30px;padding:18px 35px;font-size:22px;border-radius:99px;border:0;background:#00e5ff;font-weight:800;cursor:pointer}
-#dopo{display:none;padding:18px;max-width:760px;margin:0 auto}
+#dopo{padding:18px;max-width:760px;margin:0 auto}
 h1{font-size:32px;letter-spacing:6px;margin:8px}
-#stato{font-size:16px;min-height:22px}
-#stato.dorme{color:#888}
+#stato{font-size:16px;min-height:22px;color:#888}
 #stato.sveglio{color:#00e5ff}
 #live{font-size:17px;color:#ffcc00;min-height:24px;background:#1a1a00;border:1px solid #333;border-radius:10px;padding:8px;margin:8px 0}
 #log{background:#0a0a0a;border:1px solid #222;border-radius:12px;padding:12px;text-align:left;font-size:14px;min-height:80px;max-height:140px;overflow:auto;color:#aaa}
@@ -21,51 +18,45 @@ h1{font-size:32px;letter-spacing:6px;margin:8px}
 #domanda{width:100%;padding:14px;border-radius:99px;border:1px solid #00e5ff;background:#111;color:#fff;font-size:18px;box-sizing:border-box}
 button{padding:12px 18px;font-size:15px;border-radius:99px;border:0;background:#00e5ff;cursor:pointer;margin:5px;font-weight:700}
 button.grigio{background:#333;color:#fff}
-#cerchio{width:80px;height:80px;border-radius:50%;margin:10px auto;border:3px solid #333;display:flex;align-items:center;justify-content:center;font-size:28px}
+#cerchio{width:80px;height:80px;border-radius:50%;margin:10px auto;border:3px solid #00ff9d;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 15px #00ff9d}
 #cerchio.sveglio{border-color:#00e5ff;box-shadow:0 0 25px #00e5ff}
-#cerchio.ascolto{border-color:#00ff9d;box-shadow:0 0 15px #00ff9d}
+#avviso{background:#221100;border:1px solid #ffcc00;border-radius:12px;padding:12px;font-size:14px;margin:10px 0}
 </style>
 </head>
 <body>
 
-<div id="gate">
-<b>AXEL</b>
-<span>CLICCA QUI PER INIZIALIZZARE</span>
-<p style="opacity:.6">Dopo il clic, NON premere più niente. Parla e basta.</p>
-<button id="btnStart">▶️ AVVIA ASCOLTO SEMPRE ATTIVO</button>
-</div>
-
 <div id="dopo">
 <h1>AXEL - SEMPRE IN ASCOLTO</h1>
-<div id="cerchio" class="ascolto">🎤</div>
-<p id="stato" class="dorme">DORMO... DI' "AXEL" PER SVEGLIARMI</p>
-<div id="live">Sto ascoltando... prova a dire qualcosa, vedrai le tue parole qui.</div>
-<div id="log">LOG:<br>• In attesa...</div>
-<div id="risposta">Ciao signore. Ora sono diverso. Vedi la scritta gialla sopra? Lì appare tutto quello che dico e tutto quello che dici tu, in diretta. Se non appare niente, il microfono è bloccato. Se appare, sto ascoltando davvero.</div>
+<div id="cerchio">🎤</div>
+<p id="stato">PARTO DA SOLO... ASPETTA 2 SECONDI</p>
+<div id="avviso">⚠️ La prima volta Chrome ti chiederà il microfono in alto. Premi CONSENTI. Dopo quella volta, partirà sempre da solo. La pagina deve restare APERTA.</div>
+<div id="live">Sto per partire...</div>
+<div id="log">LOG:<br>• Avvio automatico...</div>
+<div id="risposta">Ciao signore. Ora non c'è più nessun bottone. Appena apri questa pagina, parto da solo.</div>
 <br>
-<input id="domanda" placeholder="Oppure scrivi qui...">
+<input id="domanda" placeholder="Oppure scrivi qui... e premi Invio">
 <br><br>
 <button class="grigio" onclick="sbloccaMicrofono()">🔓 SBLOCCA MICROFONO</button>
-<button class="grigio" onclick="testWake()">🧪 PROVA SVEGLIA - faccio finta che hai detto AXEL</button>
+<button class="grigio" onclick="testWake()">🧪 PROVA SVEGLIA</button>
 </div>
 
 <script>
 let rec = null;
 let modalita = "dorme";
 let staParlando = false;
-let logEl = null;
+let streamMicrofono = null;
 
 function log(t){
-  logEl = logEl || document.getElementById("log");
+  var el = document.getElementById("log");
   var ora = new Date().toLocaleTimeString("it-IT");
-  logEl.innerHTML = "LOG:<br>• " + ora + " - " + t + "<br>" + logEl.innerHTML.split("<br>").slice(0,8).join("<br>");
+  el.innerHTML = "LOG:<br>• " + ora + " - " + t + "<br>" + el.innerHTML.split("<br>").slice(0,8).join("<br>");
 }
 function setStato(testo, classe){
   var s = document.getElementById("stato");
   s.textContent = testo;
   s.className = classe;
   var c = document.getElementById("cerchio");
-  c.className = classe === "sveglio" ? "sveglio" : "ascolto";
+  c.className = classe === "sveglio" ? "sveglio" : "";
   c.textContent = classe === "sveglio" ? "👂" : "🎤";
 }
 function parla(testo){
@@ -87,18 +78,28 @@ function parla(testo){
   });
 }
 
+async function tieniMicrofonoAperto(){
+  try{
+    if(streamMicrofono) return true;
+    streamMicrofono = await navigator.mediaDevices.getUserMedia({audio:true});
+    log("Microfono tenuto aperto fisso");
+    return true;
+  }catch(e){
+    log("Microfono BLOCCATO - clicca il lucchetto in alto e metti Consenti");
+    document.getElementById("live").textContent = "Microfono bloccato. Clicca il lucchetto in alto a sinistra e metti Consenti, poi ricarica.";
+    return false;
+  }
+}
+
 function avviaAscolto(){
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ log("Browser senza riconoscimento vocale. Usa Chrome."); return; }
-  if(rec){
-    try{ rec.stop(); }catch(e){}
-  }
+  if(!SR){ log("Usa Chrome."); return; }
   try{
+    if(rec){ try{ rec.stop(); }catch(e){} }
     rec = new SR();
     rec.lang = "it-IT";
     rec.continuous = true;
-    rec.interimResults = true; // DIFFERENZA VERA: sente anche mentre parli, non solo alla fine
-
+    rec.interimResults = true;
     rec.onresult = function(e){
       if(staParlando) return;
       var finale = "";
@@ -108,47 +109,26 @@ function avviaAscolto(){
         else provvisorio += e.results[i][0].transcript + " ";
       }
       var daMostrare = (provvisorio || finale).trim();
-      if(daMostrare){
-        // QUESTO PRIMA NON C'ERA: vedi le parole in diretta
-        document.getElementById("live").textContent = "STO SENTENDO: " + daMostrare;
-      }
+      if(daMostrare) document.getElementById("live").textContent = "STO SENTENDO: " + daMostrare;
       if(finale.trim()){
         log("Ho sentito: " + finale.trim());
         gestisciVoce(finale.trim());
       }
     };
-
-    rec.onerror = function(e){
-      log("Errore microfono: " + e.error);
-      if(e.error === "not-allowed"){
-        setStato("MICROFONO BLOCCATO - PREMI SBLOCCA MICROFONO", "dorme");
-      }
-    };
-
+    rec.onerror = function(e){ log("Errore: " + e.error); };
     rec.onend = function(){
-      // DIFFERENZA VERA: se si spegne, si riaccende da solo subito
-      if(!staParlando){
-        log("Microfono si era spento, lo riaccendo da solo...");
-        setTimeout(avviaAscolto, 500);
-      }
+      if(!staParlando){ setTimeout(avviaAscolto, 400); }
     };
-
-    rec.onstart = function(){
-      log("Microfono acceso, ascolto sempre attivo");
-    };
-
+    rec.onstart = function(){ log("Ascolto sempre attivo"); };
     rec.start();
   }catch(e){
-    log("Errore avvio: " + e.message);
-    setTimeout(avviaAscolto, 1000);
+    setTimeout(avviaAscolto, 800);
   }
 }
 
 async function gestisciVoce(testo){
   var basso = testo.toLowerCase();
-  // Pulisce: "axel" a volte Chrome lo sente come "accel", "exel", "axl"
-  var haDettoAxel = basso.includes("axel") || basso.includes("accel") || basso.includes("exel") || basso.includes("axl") || basso.includes("axel");
-
+  var haDettoAxel = basso.includes("axel") || basso.includes("accel") || basso.includes("exel") || basso.includes("axl");
   if(modalita === "dorme"){
     if(haDettoAxel){
       log("!!! AXEL RILEVATO - MI SVEGLIO !!!");
@@ -156,28 +136,22 @@ async function gestisciVoce(testo){
       setStato("SONO SVEGLIO - DIMMI LA DOMANDA", "sveglio");
       await parla("Dimmi signore, ti ascolto.");
       setStato("TI ASCOLTO - FAMMI LA DOMANDA", "sveglio");
-      log("Aspetto la domanda...");
-    } else {
-      log("Dormo, ignoro: " + testo);
     }
     return;
   }
-
   if(modalita === "sveglio"){
     if(basso.includes("dormi") || basso.includes("basta")){
       modalita = "dorme";
       setStato('DORMO... DI\' "AXEL"', "dorme");
-      await parla("Va bene signore, torno a dormire. Chiamami quando mi vuoi.");
+      await parla("Va bene signore, torno a dormire.");
       return;
     }
     modalita = "rispondo";
     setStato("STO PENSANDO...", "sveglio");
-    log("Domanda ricevuta, mando al cervello AI...");
     var risposta = await pensa(testo);
     await parla(risposta);
     modalita = "dorme";
     setStato('DORMO... DI\' "AXEL"', "dorme");
-    log("Torno a dormire");
   }
 }
 
@@ -186,38 +160,22 @@ function testWake(){
   gestisciVoce("Axel");
 }
 
-async function avviaJarvis(){
-  document.getElementById("gate").style.display = "none";
-  document.getElementById("dopo").style.display = "block";
-  log("Avvio Jarvis...");
-  try{
-    var s = await navigator.mediaDevices.getUserMedia({audio:true});
-    s.getTracks().forEach(t => t.stop());
-    log("Permesso microfono OK");
-  }catch(e){
-    log("Permesso microfono NEGATO - clicca lucchetto in alto");
-    document.getElementById("risposta").textContent = "Microfono bloccato. Clicca il lucchetto in alto a sinistra, metti Consenti, poi ricarica con Ctrl + Shift + R.";
-  }
-  modalita = "dorme";
-  setStato('DORMO... DI\' "AXEL"', "dorme");
-  await parla("Ciao signore. Ora ascolto sempre. Guarda la scritta gialla: lì vedi tutto quello che dico. Dì solo Axel.");
-  avviaAscolto();
-}
-
-document.getElementById("btnStart").addEventListener("click", avviaJarvis);
-
 async function sbloccaMicrofono(){
-  try{
-    var s = await navigator.mediaDevices.getUserMedia({audio:true});
-    s.getTracks().forEach(t => t.stop());
-    log("Microfono sbloccato");
-    parla("Microfono sbloccato signore. Ora dì solo Axel.");
-    avviaAscolto();
-  }catch(e){
-    log("Sblocco fallito");
-    parla("Microfono bloccato. Clicca il lucchetto in alto e metti Consenti.");
-  }
+  var ok = await tieniMicrofonoAperto();
+  if(ok){ parla("Microfono sbloccato signore. Ora dì solo Axel."); avviaAscolto(); }
 }
+
+// PARTENZA AUTOMATICA - NIENTE PIÙ BOTTONE
+window.addEventListener("load", async function(){
+  log("Pagina aperta, parto da solo...");
+  var ok = await tieniMicrofonoAperto();
+  if(ok){
+    modalita = "dorme";
+    setStato('DORMO... DI\' "AXEL" PER SVEGLIARMI', "dorme");
+    await parla("Ciao signore. Sono partito da solo, senza bottone. Dì solo Axel.");
+    avviaAscolto();
+  }
+});
 
 async function cervello1(domanda){
   try{
@@ -258,7 +216,6 @@ async function pensa(domanda){
   if(!r) r = "Signore, i cervelli sono occupati, riprova tra 10 secondi dicendo di nuovo Axel.";
   return r;
 }
-
 document.getElementById("domanda").addEventListener("keydown", function(e){
   if(e.key === "Enter"){
     var v = e.target.value;
@@ -269,6 +226,12 @@ document.getElementById("domanda").addEventListener("keydown", function(e){
 });
 if("speechSynthesis" in window){
   window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.getVoices(); };
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
 }
 </script>
 </body>
