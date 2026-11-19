@@ -1,14 +1,12 @@
 {
   "name": "axel",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
   "scripts": {
-    "setup": "node setup.mjs",
-    "start": "node server.mjs",
-    "dev": "node server.mjs"
+    "start": "node server.js"
   },
   "dependencies": {
-    "three": "^0.160.0"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
   }
 }
