@@ -6,14 +6,15 @@
 <title>AXEL</title>
 <style>
 body{margin:0;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center}
-#gate{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;z-index:10}
-#gate b{font-size:60px;letter-spacing:12px}
-#gate span{margin-top:15px;color:#00e5ff;font-size:18px}
+#gate{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10}
+#gate b{font-size:70px;letter-spacing:14px}
+#gate span{margin-top:15px;color:#00e5ff;font-size:20px}
+#gate button{margin-top:30px;padding:18px 35px;font-size:22px;border-radius:99px;border:0;background:#00e5ff;font-weight:800;cursor:pointer}
 #dopo{display:none;padding:20px;max-width:720px;margin:0 auto}
-h1{font-size:36px;letter-spacing:6px;margin:10px}
-#stato{color:#00ff9d;letter-spacing:1px;font-size:14px;min-height:20px}
-#sentito{color:#aaa;font-size:16px;min-height:22px}
-#risposta{font-size:21px;line-height:1.5;min-height:140px;background:#111;border:1px solid #333;border-radius:16px;padding:20px;text-align:left;white-space:pre-wrap}
+h1{font-size:36px;letter-spacing:6px}
+#stato{color:#00ff9d;font-size:14px}
+#sentito{color:#aaa}
+#risposta{font-size:21px;line-height:1.5;min-height:140px;background:#111;border:1px solid #333;border-radius:16px;padding:20px;text-align:left}
 #domanda{width:100%;padding:14px;border-radius:99px;border:1px solid #00e5ff;background:#111;color:#fff;font-size:18px;box-sizing:border-box}
 button{padding:13px 20px;font-size:16px;border-radius:99px;border:0;background:#00e5ff;cursor:pointer;margin:6px;font-weight:700}
 button.grigio{background:#333;color:#fff}
@@ -21,36 +22,30 @@ button.grigio{background:#333;color:#fff}
 </head>
 <body>
 
-<div id="gate" onclick="parti()">
+<!-- GATE - ORA HA 3 MODI PER PARTIRE, NON SOLO IL CLIC -->
+<div id="gate">
 <b>AXEL</b>
 <span>CLICCA QUI PER INIZIALIZZARE</span>
 <p style="opacity:.6">Clicca, poi parla o scrivi</p>
+<!-- Questo bottone non chiama funzioni, nasconde da solo -->
+<button onclick="document.getElementById('gate').style.display='none';document.getElementById('dopo').style.display='block';parla('Ciao, sono Axel. Ora parto. Chiedimi qualsiasi cosa.')">▶️ CLICCA QUI SE IL SOPRA NON VA</button>
+<p style="opacity:.5;font-size:13px">Se non va neanche questo, premi INVIO sulla tastiera</p>
 </div>
 
 <div id="dopo">
 <h1>AXEL</h1>
-<p id="stato">PRONTO</p>
+<p id="stato">PRONTO - SONO PARTITO!</p>
 <p id="sentito"></p>
-<div id="risposta">Ciao, sono Axel. Ora so TUTTO, non solo 3 domande. Chiedimi qualsiasi cosa: cos'è una sedia, chi è 【entity-Messi¦canonical_name=Messi】, cos'è la fotosintesi, perché il cielo è blu. Ti rispondo io a voce.</div>
+<div id="risposta">Perfetto, sono partito! Ora chiedimi qualsiasi cosa. Non solo 3 domande, tutto. Esempio: cos'è una sedia, chi è 【entity-Messi¦canonical_name=Messi】, perché il cielo è blu.</div>
 <br>
 <input id="domanda" placeholder="Scrivi qualsiasi cosa... e premi Invio">
 <br><br>
 <button onclick="ascolta()">🎤 PARLA - PREMI QUI</button>
 <button onclick="provaVoce()">🔊 PROVA VOCE</button>
 <button class="grigio" onclick="sbloccaMicrofono()">🔓 SBLOCCA MICROFONO</button>
-<br>
-<p style="opacity:.6;font-size:13px">Se il microfono non va, premi SBLOCCA MICROFONO e poi Consenti in alto.</p>
 </div>
 
 <script>
-let rec = null;
-
-function parti(){
-  document.getElementById("gate").style.display = "none";
-  document.getElementById("dopo").style.display = "block";
-  parla("Ciao, sono Axel. Ora so tutto. Chiedimi qualsiasi cosa, non solo tre domande.");
-}
-
 function parla(testo){
   document.getElementById("risposta").textContent = testo;
   if(!("speechSynthesis" in window)) return;
@@ -63,80 +58,113 @@ function parla(testo){
   if(it) u.voice = it;
   window.speechSynthesis.speak(u);
 }
-function provaVoce(){ parla("Mi senti? Sono Axel. Se mi senti, la voce funziona. Ora prova il microfono."); }
+function provaVoce(){ parla("Mi senti? Sono Axel, sono partito davvero."); }
 
-// --- SBLOCCA MICROFONO VERO ---
+// CLIC OVUNQUE SULLA SCHERMATA NERA FA PARTIRE AXEL
+document.getElementById("gate").addEventListener("click", function(){
+  document.getElementById("gate").style.display = "none";
+  document.getElementById("dopo").style.display = "block";
+  parla("Ciao, sono Axel. Ora sono partito. Chiedimi qualsiasi cosa.");
+});
+
+// ANCHE SE PREMI INVIO O SPAZIO PARTE
+document.addEventListener("keydown", function(e){
+  if(e.key === "Enter" || e.key === " "){
+    var g = document.getElementById("gate");
+    if(g && g.style.display !== "none"){
+      g.style.display = "none";
+      document.getElementById("dopo").style.display = "block";
+      parla("Ciao, sono Axel. Sono partito con il tasto Invio. Chiedimi qualsiasi cosa.");
+    }
+  }
+});
+
 async function sbloccaMicrofono(){
-  document.getElementById("stato").textContent = "CHIEDO PERMESSO MICROFONO...";
+  document.getElementById("stato").textContent = "CHIEDO PERMESSO...";
   try{
-    var stream = await navigator.mediaDevices.getUserMedia({audio:true});
-    stream.getTracks().forEach(t => t.stop());
-    document.getElementById("stato").textContent = "MICROFONO SBLOCCATO! Ora premi PARLA.";
-    parla("Microfono sbloccato. Ora premi parla e dimmi quello che vuoi.");
+    var s = await navigator.mediaDevices.getUserMedia({audio:true});
+    s.getTracks().forEach(t => t.stop());
+    document.getElementById("stato").textContent = "MICROFONO SBLOCCATO!";
+    parla("Microfono sbloccato. Ora premi Parla.");
   }catch(e){
-    document.getElementById("stato").textContent = "MICROFONO BLOCCATO DA CHROME";
-    document.getElementById("risposta").textContent = "Chrome ha bloccato il microfono. Fai così: in alto a sinistra, vicino a localhost, clicca il lucchetto, poi Microfono, poi Consenti. Poi ricarica con Ctrl + Shift + R e premi di nuovo SBLOCCA MICROFONO.";
-    parla("Il microfono è bloccato da Chrome. Clicca il lucchetto in alto a sinistra e metti Consenti.");
+    document.getElementById("risposta").textContent = "Chrome ha bloccato il microfono. In alto a sinistra, vicino a localhost, clicca il lucchetto, poi Microfono, poi Consenti. Poi premi Ctrl + Shift + R.";
+    parla("Microfono bloccato. Clicca il lucchetto in alto e metti Consenti.");
   }
 }
 
-// --- MICROFONO CHE FUNZIONA ---
+let rec = null;
 function ascolta(){
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){
-    parla("Il tuo browser non ha il riconoscimento vocale. Usa Chrome. Intanto puoi scrivere la domanda.");
-    return;
-  }
+  if(!SR){ parla("Usa Chrome per parlare. Intanto scrivi la domanda."); return; }
   document.getElementById("stato").textContent = "TI ASCOLTO... PARLA ORA";
-  document.getElementById("sentito").textContent = "";
   try{
     if(rec) try{ rec.stop(); }catch(e){}
     rec = new SR();
     rec.lang = "it-IT";
-    rec.interimResults = false;
-    rec.continuous = false;
     rec.onresult = function(e){
       var testo = e.results[0][0].transcript;
       document.getElementById("sentito").textContent = "HO SENTITO: " + testo;
-      document.getElementById("stato").textContent = "HO CAPITO, CERCO...";
       rispondi(testo);
     };
     rec.onerror = function(e){
-      if(e.error === "not-allowed"){
-        document.getElementById("stato").textContent = "MICROFONO BLOCCATO";
-        parla("Microfono bloccato. Premi il pulsante Sblocca Microfono e metti Consenti in alto.");
-      } else if(e.error === "no-speech"){
-        document.getElementById("stato").textContent = "NON TI HO SENTITO, RIPROVA";
-        parla("Non ti ho sentito. Avvicinati e riprova, oppure scrivi.");
-      } else {
-        document.getElementById("stato").textContent = "ERRORE MICROFONO: " + e.error;
-      }
-    };
-    rec.onend = function(){
-      if(document.getElementById("stato").textContent === "TI ASCOLTO... PARLA ORA"){
-        document.getElementById("stato").textContent = "PRONTO";
-      }
+      if(e.error === "not-allowed") parla("Microfono bloccato. Premi Sblocca Microfono e metti Consenti.");
+      else if(e.error === "no-speech") parla("Non ti ho sentito. Riprova più vicino, oppure scrivi.");
     };
     rec.start();
-  }catch(e){
-    parla("Errore microfono. Prova a scrivere la domanda.");
-  }
+  }catch(e){ parla("Errore microfono. Scrivi la domanda."); }
 }
 
-// --- CERVELLO VERO: SA TUTTO, NON SOLO 3 DOMANDE ---
-function pulisciDomanda(d){
-  return d.toLowerCase()
-    .replace(/cos'è/g,"").replace(/cosa è/g,"").replace(/che cos'è/g,"")
-    .replace(/chi è/g,"").replace(/chi era/g,"").replace(/parlami di/g,"")
-    .replace(/dimmi di/g,"").replace(/spiegami/g,"").replace(/cosa significa/g,"")
-    .replace(/perché/g,"").replace(/\?/g,"").replace(/!/g,"").trim() || d;
+function pulisci(d){
+  return d.toLowerCase().replace(/cos'è/g,"").replace(/cosa è/g,"").replace(/che cos'è/g,"").replace(/chi è/g,"").replace(/chi era/g,"").replace(/parlami di/g,"").replace(/dimmi di/g,"").replace(/spiegami/g,"").replace(/\?/g,"").trim() || d;
 }
-
 async function cercaWikipedia(domanda){
   try{
-    var parola = pulisciDomanda(domanda);
+    var parola = pulisci(domanda);
     var url = "https://it.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&origin=*&titles=" + encodeURIComponent(parola);
     var r = await fetch(url);
     var d = await r.json();
     var pages = d.query.pages;
-    var key = Object
+    var key = Object.keys(pages)[0];
+    var testo = pages[key].extract;
+    if(!testo || testo.length < 30) return null;
+    return testo.split(". ").slice(0,5).join(". ") + ".";
+  }catch(e){ return null; }
+}
+async function cercaLibero(domanda){
+  try{
+    var r = await fetch("https://text.pollinations.ai/" + encodeURIComponent("Rispondi in italiano, semplice, 5 frasi: " + domanda));
+    if(!r.ok) return null;
+    var t = await r.text();
+    if(t && t.length > 30) return t.slice(0,1200);
+  }catch(e){}
+  return null;
+}
+async function rispondi(domanda){
+  if(!domanda) return;
+  document.getElementById("stato").textContent = "STO CERCANDO: " + domanda;
+  var q = domanda.toLowerCase();
+  var risposta = "";
+  if(q.includes("ciao")) risposta = "Ciao! Dimmi pure qualsiasi cosa.";
+  else if(q.includes("chi sei")) risposta = "Sono Axel, il tuo assistente, come Jarvis ma vero. So tutto grazie a 【entity-Wikipedia¦canonical_name=Wikipedia】.";
+  else if(q.includes("che ore")) risposta = "Sono le " + new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
+  else if(q.includes("che giorno")) risposta = "Oggi è " + new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  if(!risposta) risposta = await cercaWikipedia(domanda);
+  if(!risposta) risposta = await cercaLibero(domanda);
+  if(!risposta) risposta = "Non ho trovato " + domanda + " con quel nome. Prova a dirlo con il nome esatto: sedia, 【entity-Messi¦canonical_name=Messi】, fotosintesi.";
+  document.getElementById("stato").textContent = "PRONTO - CHIEDIMI ALTRO";
+  parla(risposta);
+}
+document.getElementById("domanda").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    var v = e.target.value;
+    e.target.value = "";
+    document.getElementById("sentito").textContent = "HAI SCRITTO: " + v;
+    rispondi(v);
+  }
+});
+if("speechSynthesis" in window){
+  window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.getVoices(); };
+}
+</script>
+</body>
+</html>
