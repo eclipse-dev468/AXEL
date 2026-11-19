@@ -2,16 +2,13 @@
   "name": "axel",
   "version": "1.0.0",
   "private": true,
-  "license": "MIT",
-  "description": "AXEL — assistente vocale personale",
   "type": "module",
-  "engines": { "node": ">=20" },
   "scripts": {
     "setup": "node setup.mjs",
     "start": "node server.mjs",
-    "start:lan": "node server.mjs --lan"
+    "dev": "node server.mjs"
   },
   "dependencies": {
-    "three": "0.180.0"
+    "three": "^0.160.0"
   }
 }
