@@ -1,11 +1,9 @@
 <!doctype html>
 <html lang="it">
 <head>
-<【entity-meta¦canonical_name=Meta】 charset="UTF-8">
-<【entity-meta¦canonical_name=Meta】 name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AXEL</title>
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#000000">
 <style>
 body{margin:0;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center}
 #dopo{padding:18px;max-width:760px;margin:0 auto}
@@ -13,8 +11,6 @@ h1{font-size:32px;letter-spacing:6px;margin:8px}
 #stato{font-size:16px;min-height:22px;color:#888}
 #stato.sveglio{color:#00e5ff}
 #live{font-size:17px;color:#ffcc00;min-height:24px;background:#1a1a00;border:1px solid #333;border-radius:10px;padding:8px;margin:8px 0}
-#chiaveBox{background:#111;border:1px solid #00ff9d;border-radius:12px;padding:12px;margin:10px 0;text-align:left}
-#chiaveInput{width:100%;padding:12px;border-radius:99px;border:1px solid #555;background:#000;color:#fff;box-sizing:border-box}
 #log{background:#0a0a0a;border:1px solid #222;border-radius:12px;padding:12px;text-align:left;font-size:14px;min-height:70px;max-height:120px;overflow:auto;color:#aaa}
 #risposta{font-size:21px;line-height:1.5;min-height:130px;background:#111;border:1px solid #333;border-radius:16px;padding:18px;text-align:left;white-space:pre-wrap;margin-top:10px}
 #domanda{width:100%;padding:14px;border-radius:99px;border:1px solid #00e5ff;background:#111;color:#fff;font-size:18px;box-sizing:border-box}
@@ -24,31 +20,20 @@ button.grigio{background:#333;color:#fff}
 </style>
 </head>
 <body>
-
 <div id="dopo">
-<h1>AXEL - GRATIS</h1>
+<h1>AXEL - SERIO</h1>
 <div id="cerchio">🎤</div>
 <p id="stato">PARTO DA SOLO...</p>
-
-<div id="chiaveBox">
-<b>🔑 CHIAVE GRATIS GROQ - UNA VOLTA SOLA</b>
-<p style="font-size:13px;color:#aaa">Vai su <b>console.groq.com</b> → Accedi con Google → API Keys → Create API Key → Copia la chiave gsk_ → Incolla QUI sotto, non su GitHub → Salva. Gratis, senza carta.</p>
-<input id="chiaveInput" placeholder="Incolla qui la chiave gsk_...">
-<br><br>
-<button onclick="salvaChiave()">💾 SALVA CHIAVE GRATIS</button>
-<span id="chiaveStato" style="font-size:13px;color:#ffcc00"></span>
-</div>
-
+<p style="font-size:13px;color:#00ff9d">✅ Server serio attivo - Nessuna chiave nel browser</p>
 <div id="live">Sto per partire...</div>
 <div id="log">LOG:<br>• Avvio...</div>
-<div id="risposta">Ciao signore. Ora sono gratis. Metti la chiave Groq sopra una volta sola e ti rispondo a tutto, senza pagare.</div>
+<div id="risposta">Ciao signore. Ora sono serio. Il cervello sta nel server, non nel browser. Dimmi pure qualsiasi cosa.</div>
 <br>
 <input id="domanda" placeholder="Scrivi qui... e premi Invio">
 <br><br>
-<button onclick="testCervello()">🧪 PROVA CERVELLO GRATIS</button>
-<button class="grigio" onclick="sbloccaMicrofono()">🔓 SBLOCCA MICROFONO</button>
+<button onclick="testCervello()">🧪 PROVA CERVELLO SERIO</button>
+<button class="grigio" onclick="sbloccaTutto()">🔓 SBLOCCA VOCE + MICROFONO</button>
 </div>
-
 <script>
 let streamMicrofono = null;
 let staParlando = false;
@@ -62,35 +47,6 @@ function setStato(testo, classe){
   var s = document.getElementById("stato");
   s.textContent = testo;
   s.className = classe || "";
-}
-function getChiave(){ return localStorage.getItem("axel-groq-key") || ""; }
-function mostraStatoChiave(){
-  var k = getChiave();
-  var el = document.getElementById("chiaveStato");
-  var inp = document.getElementById("chiaveInput");
-  if(k){
-    el.textContent = "✅ Chiave gratis salvata! Cervello attivo.";
-    el.style.color = "#00ff9d";
-    inp.value = k.slice(0,7) + "..." + k.slice(-4);
-  } else {
-    el.textContent = "❌ Nessuna chiave - incolla quella gsk_ che hai copiato";
-    el.style.color = "#ffcc00";
-  }
-}
-function salvaChiave(){
-  var v = document.getElementById("chiaveInput").value.trim();
-  if(!v || v.length < 20){
-    document.getElementById("chiaveStato").textContent = "Incolla la chiave vera, quella lunga che inizia con gsk_";
-    return;
-  }
-  if(v.includes("...")){
-    document.getElementById("chiaveStato").textContent = "Incolla la chiave intera, non quella con i puntini. Copiala di nuovo da console.groq.com";
-    return;
-  }
-  localStorage.setItem("axel-groq-key", v);
-  mostraStatoChiave();
-  log("Chiave Groq salvata");
-  parla("Chiave gratis salvata signore. Ora ti rispondo a tutto, senza pagare.");
 }
 function mutaMicrofono(muta){
   if(!streamMicrofono) return;
@@ -125,19 +81,24 @@ async function tieniMicrofonoAperto(){
   try{
     if(streamMicrofono) return true;
     streamMicrofono = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    log("Microfono aperto");
     return true;
-  }catch(e){ return false; }
+  }catch(e){ log("Microfono bloccato: " + e.message); return false; }
+}
+async function sbloccaTutto(){
+  var ok = await tieniMicrofonoAperto();
+  if(ok){ await parla("Microfono e voce sbloccati signore. Ora dimmi Axel."); }
 }
 function ascoltaUnaVolta(secondi){
   return new Promise(function(res){
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){ res(""); return; }
+    if(!SR){ log("Browser senza riconoscimento vocale, usa Chrome"); res(""); return; }
     var rec = new SR();
     rec.lang = "it-IT";
     rec.continuous = false;
     rec.interimResults = true;
     var finito = false;
-    var timer = setTimeout(function(){ finisci(""); }, (secondi || 8) * 1000);
+    var timer = setTimeout(function(){ finisci(""); }, (secondi || 10) * 1000);
     function finisci(testo){
       if(finito) return;
       finito = true;
@@ -156,7 +117,7 @@ function ascoltaUnaVolta(secondi){
       if(mostra) document.getElementById("live").textContent = "STO SENTENDO: " + mostra;
       if(finale.trim()) finisci(finale.trim());
     };
-    rec.onerror = function(e){ finisci(""); };
+    rec.onerror = function(e){ log("Errore ascolto: " + e.error); finisci(""); };
     rec.onend = function(){ finisci(""); };
     try{ rec.start(); }catch(e){ finisci(""); }
   });
@@ -167,102 +128,62 @@ async function cicloAxel(){
   while(true){
     try{
       setStato('DORMO... DI\' "AXEL"', "");
-      var sveglia = await ascoltaUnaVolta(10);
+      document.getElementById("live").textContent = "Dormo... dimmi Axel";
+      var sveglia = await ascoltaUnaVolta(12);
       var basso = (sveglia || "").toLowerCase();
-      if(!(basso.includes("axel") || basso.includes("accel") || basso.includes("exel"))) continue;
-      log("AXEL rilevato");
+      if(!(basso.includes("axel") || basso.includes("accel") || basso.includes("exel") || basso.includes("axl"))) continue;
+      log("AXEL rilevato: " + sveglia);
       setStato("SONO SVEGLIO - DIMMI LA DOMANDA", "sveglio");
       await parla("Dimmi signore, ti ascolto.");
-      var domanda = await ascoltaUnaVolta(10);
+      var domanda = await ascoltaUnaVolta(12);
       domanda = (domanda || "").replace(/axel/gi,"").trim();
-      if(!domanda) continue;
+      if(!domanda){ continue; }
       setStato("STO PENSANDO...", "sveglio");
       var risposta = await pensa(domanda);
       await parla(risposta);
       setStato("ANCORA SVEGLIO - UN'ALTRA SENZA DIRE AXEL", "sveglio");
-      var domanda2 = await ascoltaUnaVolta(10);
+      var domanda2 = await ascoltaUnaVolta(12);
       domanda2 = (domanda2 || "").replace(/axel/gi,"").trim();
       if(domanda2){
         var risposta2 = await pensa(domanda2);
         await parla(risposta2);
       }
     }catch(e){
+      log("Errore ciclo: " + e.message);
       await new Promise(function(r){ setTimeout(r, 1000); });
     }
   }
 }
 async function testCervello(){
-  log("TEST cervello gratis...");
+  log("TEST: mando domanda al server...");
   var r = await pensa("cos'è un computer? Spiegamelo in modo semplice.");
   parla(r);
 }
-async function sbloccaMicrofono(){
-  var ok = await tieniMicrofonoAperto();
-  if(ok) parla("Microfono sbloccato signore.");
-}
-async function cervelloGroq(domanda){
-  var chiave = getChiave();
-  if(!chiave) return null;
-  try{
-    log("Groq gratis: mando la domanda...");
-    var r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {"Content-Type": "application/json", "Authorization": "Bearer " + chiave},
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          {role: "system", content: "Sei AXEL, assistente personale italiano come Jarvis. Sai tutto. Rispondi in italiano, semplice, max 6 frasi. Chiamalo sempre e solo signore."},
-          {role: "user", content: domanda}
-        ],
-        temperature: 0.7,
-        max_tokens: 600
-      })
-    });
-    log("Groq: status " + r.status);
-    if(!r.ok){
-      var err = await r.text();
-      log("Groq errore: " + err.slice(0,250));
-      if(r.status === 401) return "Signore, la chiave Groq non è giusta. Copiala di nuovo tutta da console.groq.com, deve iniziare con gsk_.";
-      if(r.status === 429) return "Signore, hai fatto troppe domande in un minuto. Aspetta 20 secondi e riprova.";
-      return null;
-    }
-    var d = await r.json();
-    var testo = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-    if(testo){
-      log("Groq: risposta ricevuta, " + testo.length + " caratteri");
-      return testo.trim().slice(0,1500);
-    }
-    return null;
-  }catch(e){
-    log("Groq errore rete: " + e.message);
-    return null;
-  }
-}
+// ORA CHIAMA IL SERVER, NON GROQ DIRETTAMENTE - QUI ERA IL PROBLEMA
 async function pensa(domanda){
-  var q = domanda.toLowerCase();
-  if(q.includes("che ore")) return "Sono le " + new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) + ", signore.";
-  if(q.includes("che giorno")) return "Oggi è " + new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + ", signore.";
-  if(q.includes("ciao")) return "Ciao signore, dimmi pure.";
-  if(q.includes("quanto fa")){
-    try{
-      var expr = domanda.replace(/quanto fa/gi,"").replace(/più/gi,"+").replace(/per/gi,"*").replace(/diviso/gi,"/").replace(/meno/gi,"-").replace(/x/gi,"*");
-      return "Fa " + Function("return (" + expr + ")")() + ", signore.";
-    }catch(e){}
+  try{
+    log("Mando al server: " + domanda);
+    var r = await fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ domanda: domanda })
+    });
+    var d = await r.json();
+    log("Server ha risposto");
+    return d.risposta || "Signore, il server non ha risposto.";
+  }catch(e){
+    log("Errore server: " + e.message);
+    return "Signore, il server non risponde. Controlla che la finestra nera sia aperta con npm start.";
   }
-  var r = await cervelloGroq(domanda);
-  if(r) return r;
-  if(!getChiave()){
-    return "Signore, metti la chiave gratis Groq sopra, quella gsk_, e premi Salva. Poi ti rispondo a tutto senza pagare.";
-  }
-  return "Signore, Groq non ha risposto. Controlla la chiave sopra o aspetta 20 secondi e riprova.";
 }
 window.addEventListener("load", async function(){
-  mostraStatoChiave();
-  log("Avvio gratis...");
+  log("Avvio serio...");
   var ok = await tieniMicrofonoAperto();
   if(ok){
-    await parla("Ciao signore. Ora sono gratis. Metti la chiave Groq sopra una volta sola.");
+    await parla("Ciao signore. Ora sono serio. Il cervello sta nel server.");
     cicloAxel();
+  } else {
+    log("Premi SBLOCCA VOCE + MICROFONO");
   }
 });
 document.getElementById("domanda").addEventListener("keydown", async function(e){
@@ -275,11 +196,6 @@ document.getElementById("domanda").addEventListener("keydown", async function(e)
 });
 if("speechSynthesis" in window){
   window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.getVoices(); };
-}
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
 }
 </script>
 </body>
