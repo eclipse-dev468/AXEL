@@ -9,102 +9,116 @@
 .top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:18px 22px;z-index:5}
 .brand b{font-size:22px;letter-spacing:.25em}.brand small{display:block;font-size:10px;letter-spacing:.22em;opacity:.7}
 .status{font-size:12px;letter-spacing:.18em}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#00ff9d;margin-right:8px}
-#caption{position:fixed;left:50%;bottom:160px;transform:translateX(-50%);text-align:center;width:min(700px,90vw);z-index:5}#you{opacity:.7}#says{font-size:24px;font-weight:700;line-height:1.3;min-height:40px}
-#hint{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:5;letter-spacing:.15em}#hint b{color:#00e5ff}
-#gate{position:fixed;inset:0;background:#000;display:grid;place-items:center;z-index:20;cursor:pointer}.gate-inner{text-align:center}.gate-ring{width:150px;height:150px;border:1px solid #00e5ff;border-radius:50%;margin:0 auto 20px;position:relative}.gate-inner>b{font-size:52px;letter-spacing:.35em}.gate-inner span{display:block;margin-top:10px;letter-spacing:.2em;font-size:12px}.gate-inner small{display:block;margin-top:8px;opacity:.6}
-#controls{position:fixed;bottom:18px;left:22px;right:22px;display:flex;gap:8px;z-index:6}#controls button{background:#111;border:1px solid #444;color:#fff;padding:10px 14px;border-radius:99px;cursor:pointer}
-#typeBox{position:fixed;left:50%;bottom:50px;transform:translateX(-50%);z-index:6;width:min(520px,90vw);display:none}#typeBox input{width:100%;background:#111;border:1px solid #00e5ff;color:#fff;padding:12px;border-radius:99px}
+#caption{position:fixed;left:50%;bottom:170px;transform:translateX(-50%);text-align:center;width:min(700px,90vw);z-index:5}#you{opacity:.7}#says{font-size:24px;font-weight:700;line-height:1.3;min-height:40px}
+#hint{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);z-index:5;letter-spacing:.15em}#hint b{color:#00e5ff}
+#gate{position:fixed;inset:0;background:#000;display:grid;place-items:center;z-index:20;cursor:pointer}.gate-inner{text-align:center}.gate-ring{width:150px;height:150px;border:1px solid #00e5ff;border-radius:50%;margin:0 auto 20px}.gate-inner>b{font-size:52px;letter-spacing:.35em}.gate-inner span{display:block;margin-top:10px;letter-spacing:.2em;font-size:12px}.gate-inner small{display:block;margin-top:8px;opacity:.6}
+#controls{position:fixed;bottom:18px;left:22px;right:22px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:6}#controls button,#controls select{background:#111;border:1px solid #444;color:#fff;padding:10px 12px;border-radius:99px;cursor:pointer}#controls select{max-width:220px}
+#typeBox{position:fixed;left:50%;bottom:60px;transform:translateX(-50%);z-index:6;width:min(520px,90vw);display:none}#typeBox input{width:100%;background:#111;border:1px solid #00e5ff;color:#fff;padding:12px;border-radius:99px}
 #err{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#300;color:#fff;padding:10px 14px;border-radius:10px;display:none;z-index:50;max-width:90vw;text-align:center}
+#brainInfo{position:fixed;left:22px;bottom:60px;font-size:11px;opacity:.6;z-index:5}
 </style>
 </head>
 <body>
 <div class="top"><div class="brand"><b>AXEL</b><small>ASSISTENTE PERSONALE</small></div><div class="status"><span class="dot"></span><span id="statusText">PRONTO - CLICCA AXEL</span></div><div id="clock">--:--</div></div>
 <div id="err"></div>
-<div id="caption"><p id="you"></p><p id="says">Clicca AXEL, poi dimmi pure.</p></div>
+<div id="caption"><p id="you"></p><p id="says">Clicca AXEL, poi dimmi pure. Non serve più FreeLLMAPI.</p></div>
 <div id="hint"><span>DÌ</span> <b>«CIAO AXEL»</b> <span>oppure premi T e scrivi</span></div>
 <div id="gate"><div class="gate-inner"><div class="gate-ring"></div><b>AXEL</b><span>CLICCA PER INIZIALIZZARE</span><small>Abilita microfono e audio</small></div></div>
-<div id="controls"><button id="testBtn">PROVA VOCE</button><button id="micBtn">PROVA MICROFONO</button><small style="margin-left:auto;opacity:.6">T = scrivi</small></div>
+<div id="controls"><button id="testBtn">PROVA VOCE</button><button id="micBtn">PROVA MICROFONO</button><select id="voiceSelect"><option>Carico voci...</option></select></div>
+<div id="brainInfo">Cervello: sempre acceso · gratis · senza FreeLLMAPI</div>
 <form id="typeBox"><input placeholder="Scrivi a Axel e premi Invio…" autocomplete="off"></form>
 <script>
 let rec=null, listening=false, speaking=false;
+let voiceRate=parseFloat(localStorage.getItem("axel-rate")||"0.95");
+let voicePitch=parseFloat(localStorage.getItem("axel-pitch")||"1");
+let chosenVoiceName=localStorage.getItem("axel-voice-name")||"";
 const $=s=>document.querySelector(s);
 function showErr(t){ const e=$("#err"); e.style.display="block"; e.textContent=t; setTimeout(()=>e.style.display="none",6000); }
 function setStatus(t){ $("#statusText").textContent=t; }
 setInterval(()=>{ $("#clock").textContent=new Date().toLocaleTimeString("it-IT"); },1000);
+function loadVoices(){
+  const vs=window.speechSynthesis.getVoices();
+  const sel=$("#voiceSelect"); sel.innerHTML="";
+  const it=vs.filter(v=>v.lang&&v.lang.startsWith("it"));
+  const en=vs.filter(v=>v.lang==="en-GB");
+  const list=[...it,...en,...vs.filter(v=>!it.includes(v)&&!en.includes(v)).slice(0,5)];
+  if(!list.length){ sel.innerHTML="<option>Nessuna voce</option>"; return; }
+  list.forEach(v=>{ const o=document.createElement("option"); o.value=v.name; o.textContent=v.name+" ("+v.lang+")"; if(v.name===chosenVoiceName) o.selected=true; sel.appendChild(o); });
+  if(!chosenVoiceName){ const best=vs.find(v=>v.name.toLowerCase().includes("google")&&v.lang==="it-IT")||vs.find(v=>v.lang==="it-IT")||vs[0]; if(best){ chosenVoiceName=best.name; sel.value=best.name; localStorage.setItem("axel-voice-name",best.name); } }
+}
+if("speechSynthesis" in window){ loadVoices(); window.speechSynthesis.onvoiceschanged=loadVoices; }
+$("#voiceSelect").addEventListener("change",e=>{ chosenVoiceName=e.target.value; localStorage.setItem("axel-voice-name",chosenVoiceName); speak("Ciao, sono Axel con la nuova voce. Ti piace?"); });
 function speak(text){
   return new Promise(res=>{
     if(!("speechSynthesis" in window)){ res(); return; }
     try{ window.speechSynthesis.cancel(); }catch{}
-    // Chiudi orecchie mentre parlo - anti eco
     speaking=true; try{ rec&&rec.stop(); }catch{}
     const u=new SpeechSynthesisUtterance(text);
-    u.lang="it-IT"; u.rate=1;
+    u.lang="it-IT"; u.rate=voiceRate; u.pitch=voicePitch;
     const vs=window.speechSynthesis.getVoices();
-    const it=vs.find(v=>v.lang==="it-IT")||vs.find(v=>v.lang&&v.lang.startsWith("it"));
-    if(it) u.voice=it;
-    u.onend=()=>{ speaking=false; setTimeout(()=>{ if(listening) startListen(); },500); res(); };
+    const chosen=vs.find(v=>v.name===chosenVoiceName)||vs.find(v=>v.lang==="it-IT")||vs[0];
+    if(chosen) u.voice=chosen;
+    u.onend=()=>{ speaking=false; setTimeout(()=>{ if(listening) startListen(); },400); res(); };
     u.onerror=()=>{ speaking=false; res(); };
     window.speechSynthesis.speak(u);
-    setTimeout(()=>{ if(speaking){ speaking=false; res(); } },12000);
+    setTimeout(()=>{ if(speaking){ speaking=false; res(); } },15000);
   });
 }
+// --- CERVELLO NUOVO: sempre acceso, senza FreeLLMAPI ---
 async function getAnswer(q){
-  // 1. Prova FreeLLMAPI
+  const question=q.trim();
+  // 1. Prova Pollinations - gratis, senza chiave, sempre acceso
   try{
-    const r=await fetch("http://localhost:3001/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"auto",messages:[{role:"system",content:"Sei AXEL, assistente italiano, breve, utile, mai dire undefined."},{role:"user",content:q}],temperature:0.7,max_tokens:400})});
-    if(r.ok){ const d=await r.json(); const t=d?.choices?.[0]?.message?.content?.trim(); if(t) return t; }
+    const prompt=encodeURIComponent("Sei AXEL, assistente personale italiano, caldo, diretto, breve. Rispondi in italiano, massimo 4 frasi. Domanda: "+question);
+    const r=await fetch("https://text.pollinations.ai/"+prompt, {headers:{Accept:"text/plain"}});
+    if(r.ok){
+      const t=(await r.text()).trim();
+      if(t && t.length>2 && !t.toLowerCase().includes("pollinations")) return t.slice(0,1200);
+    }
   }catch{}
-  // 2. Risposte locali se FreeLLMAPI non c'è
-  const t=q.toLowerCase();
-  if(t.includes("ciao")||t.includes("buongiorno")) return "Ciao! Sono Axel, che piacere sentirti. Dimmi pure cosa ti serve.";
+  // 2. Prova DuckDuckGo AI gratis come backup
+  try{
+    const r2=await fetch("https://api.duckduckgo.com/?q="+encodeURIComponent(question)+"&format=json&no_html=1&skip_disambig=1");
+    if(r2.ok){ const d=await r2.json(); if(d.AbstractText) return d.AbstractText.slice(0,800); }
+  }catch{}
+  // 3. Risposte locali - così non resta mai muto
+  const t=question.toLowerCase();
+  if(t.includes("ciao")||t.includes("buongiorno")||t.includes("buonasera")) return "Ciao! Sono Axel, che piacere sentirti. Dimmi pure cosa ti serve.";
   if(t.includes("che ore")) return "Sono le "+new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})+".";
-  if(t.includes("chi sei")) return "Sono Axel, il tuo assistente personale. Posso aiutarti con domande, calcoli e idee.";
+  if(t.includes("chi sei")||t.includes("come ti chiami")) return "Sono Axel, il tuo assistente personale. Posso aiutarti con domande, calcoli, idee e promemoria. E non ho più bisogno di FreeLLMAPI, funziono sempre.";
   if(t.includes("buco nero")) return "Un buco nero è una zona dello spazio dove la gravità è così forte che nemmeno la luce riesce a scappare. Si forma quando una stella molto grande muore e collassa su se stessa.";
+  if(t.includes("relativit")) return "La relatività di Einstein dice che tempo e spazio non sono fissi, cambiano a seconda di quanto veloce vai e di quanta gravità c'è. Più vai veloce, più il tempo rallenta per te rispetto a chi sta fermo.";
   if(t.includes("grazie")) return "Di niente! Sono qui per questo.";
-  const m=q.match(/([0-9]+)\s*[\+\-\*\/x]\s*([0-9]+)/);
-  if(m||t.includes("quanto fa")){ try{ const expr=q.toLowerCase().replace(/quanto fa/g,"").replace(/più/g,"+").replace(/per/g,"*").replace(/diviso/g,"/").replace(/meno/g,"-").match(/[0-9\.\s\+\-\*\/\(\)]+/)[0]; const r=Function("return ("+expr+")")(); return "Fa "+r+"."; }catch{} }
-  return "Ho capito: "+q+". Se FreeLLMAPI non è aperto, uso le risposte salvate. Apri FreeLLMAPI vicino all'orologio e chiedimelo di nuovo per una risposta più intelligente.";
+  const m=question.match(/([0-9]+)\s*[\+\-\*\/x]\s*([0-9]+)/);
+  if(m||t.includes("quanto fa")){ try{ const expr=question.toLowerCase().replace(/quanto fa/g,"").replace(/più/g,"+").replace(/per/g,"*").replace(/diviso/g,"/").replace(/meno/g,"-").match(/[0-9\.\s\+\-\*\/\(\)]+/)[0]; const r=Function("return ("+expr+")")(); return "Fa "+r+"."; }catch{} }
+  return "Ho capito: "+question+". Ora funziono anche senza FreeLLMAPI. Se vuoi una risposta ancora più profonda, dimmelo e te la spiego meglio.";
 }
 async function handleText(q){
   if(!q) return;
-  $("#you").textContent="TU: "+q;
-  setStatus("ELABORO...");
-  const a=await getAnswer(q);
-  $("#says").textContent=a;
-  setStatus("IN ASCOLTO");
-  await speak(a);
+  $("#you").textContent="TU: "+q; setStatus("ELABORO...");
+  const a=await getAnswer(q); $("#says").textContent=a; setStatus("IN ASCOLTO"); await speak(a);
 }
 function startListen(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ showErr("Microfono vocale non supportato. Usa Chrome. Puoi comunque scrivere con T."); return; }
+  if(!SR){ showErr("Usa Chrome o Edge per il microfono. Puoi scrivere con T."); return; }
   try{
     if(rec) try{rec.stop();}catch{}
     rec=new SR(); rec.lang="it-IT"; rec.continuous=true; rec.interimResults=false;
-    rec.onresult=(e)=>{
-      if(speaking) return;
-      const txt=e.results[e.results.length-1][0].transcript.trim();
-      if(txt) handleText(txt);
-    };
-    rec.onerror=(e)=>{ if(e.error==="not-allowed") showErr("Microfono bloccato: clicca il lucchetto vicino al link in alto e metti Microfono su Consenti, poi ricarica."); };
+    rec.onresult=(e)=>{ if(speaking) return; const txt=e.results[e.results.length-1][0].transcript.trim(); if(txt) handleText(txt); };
+    rec.onerror=(e)=>{ if(e.error==="not-allowed") showErr("Microfono bloccato: clicca il lucchetto in alto e metti Microfono su Consenti."); };
     rec.onend=()=>{ if(listening && !speaking){ try{rec.start();}catch{} } };
     rec.start(); listening=true; setStatus("IN ASCOLTO - PARLA PURE");
-  }catch(e){ showErr("Non riesco ad avviare il microfono: "+e.message); }
+  }catch(e){ showErr("Microfono: "+e.message); }
 }
 async function start(){
-  $("#gate").style.display="none";
-  setStatus("AVVIO MICROFONO...");
-  try{ await navigator.mediaDevices.getUserMedia({audio:true}); }catch{ showErr("Microfono bloccato: clicca il lucchetto in alto vicino al link e metti Microfono su Consenti."); }
-  startListen();
-  const hello="Ciao, sono Axel. Dimmi pure.";
-  $("#says").textContent=hello;
-  await speak(hello);
+  $("#gate").style.display="none"; setStatus("AVVIO MICROFONO...");
+  try{ await navigator.mediaDevices.getUserMedia({audio:true}); }catch{ showErr("Microfono bloccato: clicca il lucchetto in alto e metti Consenti."); }
+  startListen(); const hello="Ciao, sono Axel. Ora funziono sempre, anche senza FreeLLMAPI. Dimmi pure."; $("#says").textContent=hello; await speak(hello);
 }
 $("#gate").addEventListener("click", start);
-$("#testBtn").addEventListener("click", ()=>{ speak("Prova voce. Mi senti? Se mi senti, l'audio funziona."); });
+$("#testBtn").addEventListener("click", ()=>{ speak("Prova voce. Mi senti? Ora la mia voce è più naturale."); });
 $("#micBtn").addEventListener("click", async ()=>{ try{ await navigator.mediaDevices.getUserMedia({audio:true}); showErr("Microfono OK! Ora puoi parlare."); startListen(); }catch{ showErr("Microfono bloccato: clicca il lucchetto in alto e Consenti."); } });
-document.addEventListener("keydown",(e)=>{
-  if(e.key.toLowerCase()==="t"){ const tb=$("#typeBox"); tb.style.display=tb.style.display==="block"?"none":"block"; if(tb.style.display==="block") tb.querySelector("input").focus(); }
-});
+document.addEventListener("keydown",(e)=>{ if(e.key.toLowerCase()==="t"){ const tb=$("#typeBox"); tb.style.display=tb.style.display==="block"?"none":"block"; if(tb.style.display==="block") tb.querySelector("input").focus(); } });
 $("#typeBox").addEventListener("submit",(e)=>{ e.preventDefault(); const inp=$("#typeBox input"); const v=inp.value; inp.value=""; $("#typeBox").style.display="none"; handleText(v); });
 </script>
 </body>
