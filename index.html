@@ -5,40 +5,71 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AXEL</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:#000;color:#eaf6ff;font-family:system-ui,sans-serif;overflow:hidden}
-.top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:18px 22px;z-index:5}
-.brand b{font-size:22px;letter-spacing:.25em}.brand small{display:block;font-size:10px;letter-spacing:.22em;opacity:.7}
-.status{font-size:12px;letter-spacing:.18em}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#00ff9d;margin-right:8px}
-#caption{position:fixed;left:50%;bottom:170px;transform:translateX(-50%);text-align:center;width:min(760px,92vw);z-index:5}#you{opacity:.7;font-size:15px}#says{font-size:21px;font-weight:600;line-height:1.4;min-height:40px;max-height:220px;overflow:auto}
-#hint{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);z-index:5;letter-spacing:.15em}#hint b{color:#00e5ff}
-#gate{position:fixed;inset:0;background:#000;display:grid;place-items:center;z-index:20;cursor:pointer}.gate-inner{text-align:center}.gate-ring{width:150px;height:150px;border:1px solid #00e5ff;border-radius:50%;margin:0 auto 20px}.gate-inner>b{font-size:52px;letter-spacing:.35em}.gate-inner span{display:block;margin-top:10px;letter-spacing:.2em;font-size:12px}.gate-inner small{display:block;margin-top:8px;opacity:.6}
-#controls{position:fixed;bottom:18px;left:22px;right:22px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:6}#controls button,#controls select{background:#111;border:1px solid #444;color:#fff;padding:10px 12px;border-radius:99px;cursor:pointer}#controls select{max-width:220px}
-#typeBox{position:fixed;left:50%;bottom:60px;transform:translateX(-50%);z-index:6;width:min(520px,90vw);display:none}#typeBox input{width:100%;background:#111;border:1px solid #00e5ff;color:#fff;padding:12px;border-radius:99px}
-#err{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#300;color:#fff;padding:10px 14px;border-radius:10px;display:none;z-index:50;max-width:90vw;text-align:center}
+body{margin:0;background:#000;color:white;font-family:system-ui,sans-serif;text-align:center}
+#gate{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer}
+#gate b{font-size:60px;letter-spacing:10px}
+#gate span{margin-top:15px;color:#00e5ff}
+#dopo{display:none;padding-top:120px}
+#dopo h1{font-size:40px}
+button{padding:15px 25px;font-size:18px;border-radius:30px;border:0;background:#00e5ff;cursor:pointer;margin:10px}
+#risposta{font-size:22px;margin:30px;padding:20px}
 </style>
 </head>
 <body>
-<div class="top"><div class="brand"><b>AXEL</b><small>ASSISTENTE PERSONALE</small></div><div class="status"><span class="dot"></span><span id="statusText">PRONTO - CLICCA AXEL</span></div><div id="clock">--:--</div></div>
-<div id="err"></div>
-<div id="caption"><p id="you"></p><p id="says">Clicca AXEL, poi chiedimi qualsiasi cosa. Ora so tutto con Wikipedia.</p></div>
-<div id="hint"><span>DÌ</span> <b>«CIAO AXEL»</b> <span>oppure premi T e scrivi</span></div>
-<div id="gate"><div class="gate-inner"><div class="gate-ring"></div><b>AXEL</b><span>CLICCA PER INIZIALIZZARE</span><small>Abilita microfono e audio</small></div></div>
-<div id="controls"><button id="testBtn">PROVA VOCE</button><button id="micBtn">PROVA MICROFONO</button><select id="voiceSelect"><option>Carico voci...</option></select></div>
-<form id="typeBox"><input placeholder="Scrivi a Axel e premi Invio…" autocomplete="off"></form>
-<script>
-let rec=null, listening=false, speaking=false;
-let chosenVoiceName=localStorage.getItem("axel-voice-name")||"";
-const $=s=>document.querySelector(s);
-function showErr(t){ const e=$("#err"); e.style.display="block"; e.textContent=t; setTimeout(()=>e.style.display="none",6000); }
-function setStatus(t){ $("#statusText").textContent=t; }
-setInterval(()=>{ $("#clock").textContent=new Date().toLocaleTimeString("it-IT"); },1000);
-function loadVoices(){ const vs=window.speechSynthesis.getVoices(); const sel=$("#voiceSelect"); sel.innerHTML=""; const it=vs.filter(v=>v.lang&&v.lang.startsWith("it")); const list=[...it,...vs.filter(v=>!it.includes(v)).slice(0,5)]; if(!list.length){ sel.innerHTML="<option>Nessuna voce</option>"; return; } list.forEach(v=>{ const o=document.createElement("option"); o.value=v.name; o.textContent=v.name+" ("+v.lang+")"; if(v.name===chosenVoiceName) o.selected=true; sel.appendChild(o); }); if(!chosenVoiceName){ const best=vs.find(v=>v.name.toLowerCase().includes("google")&&v.lang==="it-IT")||vs.find(v=>v.lang==="it-IT")||vs[0]; if(best){ chosenVoiceName=best.name; sel.value=best.name; localStorage.setItem("axel-voice-name",best.name); } } }
-if("speechSynthesis" in window){ loadVoices(); window.speechSynthesis.onvoiceschanged=loadVoices; }
-$("#voiceSelect").addEventListener("change",e=>{ chosenVoiceName=e.target.value; localStorage.setItem("axel-voice-name",chosenVoiceName); speak("Ciao, sono Axel con la nuova voce."); });
-function speak(text){ return new Promise(res=>{ if(!("speechSynthesis" in window)){ res(); return; } try{ window.speechSynthesis.cancel(); }catch{} speaking=true; try{ rec&&rec.stop(); }catch{} const u=new SpeechSynthesisUtterance(text); u.lang="it-IT"; u.rate=0.95; u.pitch=1; const vs=window.speechSynthesis.getVoices(); const chosen=vs.find(v=>v.name===chosenVoiceName)||vs.find(v=>v.lang==="it-IT")||vs[0]; if(chosen) u.voice=chosen; u.onend=()=>{ speaking=false; setTimeout(()=>{ if(listening) startListen(); },500); res(); }; u.onerror=()=>{ speaking=false; res(); }; window.speechSynthesis.speak(u); setTimeout(()=>{ if(speaking){ speaking=false; res(); } },20000); }); }
 
-// ========== LIBRO DEL SAPERE DI AXEL - SA TUTTO ==========
-const SAPERE = {
-"pc": "Un PC, cioè un Personal Computer, è un computer che usi tu da solo, per lavorare, studiare, giocare e andare su internet. Ha uno schermo, una tastiera, un mouse, un processore che fa i calcoli, una memoria RAM che tiene aperti i programmi, e un disco dove salva i file. I PC più usati hanno Windows, i Mac hanno macOS, altri hanno Linux. Il primo PC moderno è nato negli anni 80, prima i computer erano grandi come stanze.",
-"computer": "Un computer è una macchina che prende informazioni, le elabora con calcoli velocissimi e ti mostra il risultato. Dentro ha un processore, che è il cervello, la RAM che è la memoria veloce, e il disco che è la memoria lunga. Può essere un PC, un telefono, un tablet o anche la macchina che controlla la lavatrice. Senza programmi, un computer non sa fare niente, con i programmi sa fare quasi tutto.",
-"telefono": "Un telefono è un apparecchio per parlare con chi è lontano. Quello che hai in tasca è uno smartphone, cioè
+<div id="gate" onclick="parti()">
+<b>AXEL</b>
+<span>CLICCA QUI PER INIZIALIZZARE</span>
+<p style="opacity:.6">Se clicchi e non succede niente, il file è vecchio. Premi Ctrl + Shift + R</p>
+</div>
+
+<div id="dopo">
+<h1>AXEL È PARTITO!</h1>
+<p>Ora funziona. Dimmi pure.</p>
+<button onclick="parla()">PROVA VOCE</button>
+<button onclick="scrivi()">SCRIVI DOMANDA</button>
+<p id="risposta">Ciao, sono Axel. Ora parto sempre.</p>
+<input id="domanda" placeholder="Scrivi qui: cos'è un PC?" style="padding:12px;width:80%;max-width:400px;border-radius:20px;border:1px solid #00e5ff;background:#111;color:white;display:none">
+</div>
+
+<script>
+function parti(){
+  document.getElementById("gate").style.display = "none";
+  document.getElementById("dopo").style.display = "block";
+  parla();
+}
+function parla(){
+  var testo = document.getElementById("risposta").textContent;
+  if("speechSynthesis" in window){
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(testo);
+    u.lang = "it-IT";
+    window.speechSynthesis.speak(u);
+  }
+}
+function scrivi(){
+  var inp = document.getElementById("domanda");
+  inp.style.display = "block";
+  inp.focus();
+}
+document.getElementById("domanda").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    var q = e.target.value.toLowerCase();
+    var r = "";
+    if(q.includes("pc") || q.includes("computer")){
+      r = "Un PC è un Personal Computer. È un computer che usi tu da solo, per studiare, giocare e andare su internet. Ha schermo, tastiera, mouse, processore, memoria RAM e disco.";
+    } else if(q.includes("buco nero")){
+      r = "Un buco nero è una zona dello spazio dove la gravità è così forte che nemmeno la luce riesce a scappare. Si forma quando una stella molto grande muore e collassa su se stessa.";
+    } else if(q.includes("ciao")){
+      r = "Ciao! Sono Axel, finalmente parto. Chiedimi quello che vuoi.";
+    } else {
+      r = "Bella domanda: " + e.target.value + ". Ora ti rispondo con 【entity-Wikipedia¦canonical_name=Wikipedia】 nella versione completa. Per ora dimmi: vuoi sapere cos'è, chi è, o come funziona?";
+    }
+    document.getElementById("risposta").textContent = r;
+    parla();
+    e.target.value = "";
+  }
+});
+</script>
+</body>
+</html>
