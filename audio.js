@@ -1,11 +1,12 @@
-// AXEL - Audio: voce + ascolto
-// CORRETTO anti-eco: quando Axel parla, smette di ascoltare.
-// Così non sente la sua stessa voce e non va in loop.
+// AXEL - Audio: voce + ascolto (versione robusta, anti-eco + watchdog)
 
 let audioCtx = null;
 let recognition = null;
 let listening = false;
-let pausedForSpeech = false;
+let pausedForSpeech = 0;
+let currentUtterance = null;
+let recognitionRunning = false;
+let watchdogTimer = null;
 let lastListenArgs = null;
 
 export async function initAudio() {
@@ -42,14 +43,37 @@ function pickItalianVoice() {
   );
 }
 
-function startRecognitionInternal() {
+function actuallyStartRecognition() {
   if (!recognition) return;
-  try { recognition.start(); } catch {}
+  if (recognitionRunning) return;
+  try {
+    recognition.start();
+    recognitionRunning = true;
+  } catch (e) {
+    if (!/InvalidStateError|already started/i.test(e.message)) {
+      console.warn("[audio] start error:", e);
+    }
+  }
 }
 
-function stopRecognitionInternal() {
+function actuallyStopRecognition() {
   if (!recognition) return;
-  try { recognition.stop(); } catch {}
+  recognitionRunning = false;
+  try { recognition.abort(); } catch {
+    try { recognition.stop(); } catch {}
+  }
+}
+
+function startWatchdog() {
+  if (watchdogTimer) return;
+  watchdogTimer = setInterval(() => {
+    if (!listening) return;
+    if (pausedForSpeech > 0) return;
+    if (!recognitionRunning) {
+      console.log("[audio] watchdog: riconoscimento fermo, riavvio");
+      actuallyStartRecognition();
+    }
+  }, 3000);
 }
 
 export function speak(text) {
@@ -58,34 +82,37 @@ export function speak(text) {
     const clean = String(text).replace(/[*#_<>]/g, "").slice(0, 1000);
     if (!("speechSynthesis" in window)) return resolve();
 
-    // --- ANTI-ECO: chiudo le orecchie mentre parlo ---
-    if (listening && !pausedForSpeech) {
-      pausedForSpeech = true;
-      stopRecognitionInternal();
+    try { window.speechSynthesis.cancel(); } catch {}
+    if (currentUtterance) {
+      currentUtterance.onend = null;
+      currentUtterance.onerror = null;
+      currentUtterance = null;
     }
 
-    try { window.speechSynthesis.cancel(); } catch {}
+    pausedForSpeech++;
+    if (pausedForSpeech === 1) actuallyStopRecognition();
 
     const u = new SpeechSynthesisUtterance(clean);
     u.lang = "it-IT";
     u.rate = 1.0;
     u.pitch = 1.0;
     u.volume = 1.0;
-
     const voice = pickItalianVoice();
     if (voice) u.voice = voice;
 
     const voiceEl = document.getElementById("debugVoice");
     if (voiceEl) voiceEl.textContent = voice ? voice.name : "Browser";
 
+    let done = false;
     const finish = () => {
-      // --- Ho finito di parlare, riapro le orecchie ---
-      if (pausedForSpeech) {
-        pausedForSpeech = false;
-        // Aspetta 400ms così non sente la coda della sua voce
+      if (done) return;
+      done = true;
+      if (currentUtterance === u) currentUtterance = null;
+      pausedForSpeech = Math.max(0, pausedForSpeech - 1);
+      if (pausedForSpeech === 0) {
         setTimeout(() => {
-          if (listening) startRecognitionInternal();
-        }, 400);
+          if (listening && pausedForSpeech === 0) actuallyStartRecognition();
+        }, 500);
       }
       resolve();
     };
@@ -93,18 +120,22 @@ export function speak(text) {
     u.onend = finish;
     u.onerror = finish;
 
-    if (!window.speechSynthesis.getVoices().length) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        const v2 = pickItalianVoice();
-        if (v2) u.voice = v2;
+    currentUtterance = u;
+    try {
+      if (!window.speechSynthesis.getVoices().length) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          const v2 = pickItalianVoice();
+          if (v2) u.voice = v2;
+          try { window.speechSynthesis.speak(u); } catch { finish(); }
+        };
+      } else {
         window.speechSynthesis.speak(u);
-      };
-      setTimeout(() => finish(), 1000);
+      }
+    } catch {
+      finish();
       return;
     }
-
-    window.speechSynthesis.speak(u);
-    setTimeout(() => finish(), 15000);
+    setTimeout(finish, 20000);
   });
 }
 
@@ -114,7 +145,13 @@ export function stopSpeaking() {
 
 export function listen({ onResult, onInterim } = {}) {
   lastListenArgs = { onResult, onInterim };
-  if (listening) return recognition;
+  if (recognition) {
+    if (!recognitionRunning && listening && pausedForSpeech === 0) {
+      actuallyStartRecognition();
+    }
+    return recognition;
+  }
+
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const engEl = document.getElementById("debugEngine");
 
@@ -134,14 +171,14 @@ export function listen({ onResult, onInterim } = {}) {
 
     recognition.onstart = () => {
       listening = true;
+      recognitionRunning = true;
       if (engEl) engEl.textContent = "ATTIVO";
       const rec = document.getElementById("debugRec");
       if (rec) rec.textContent = "ON";
     };
 
     recognition.onresult = (event) => {
-      // Se sto parlando io, ignora tutto quello che sente
-      if (pausedForSpeech) return;
+      if (pausedForSpeech > 0) return;
       let interim = "";
       let finalText = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -150,30 +187,40 @@ export function listen({ onResult, onInterim } = {}) {
         else interim += res[0].transcript;
       }
       const debugText = document.getElementById("debugText");
-      if (interim && onInterim) onInterim(interim.trim());
+      if (interim && lastListenArgs?.onInterim) lastListenArgs.onInterim(interim.trim());
       if (finalText) {
         const t = finalText.trim();
         if (debugText) debugText.textContent = t;
-        if (onResult) onResult(t);
+        if (lastListenArgs?.onResult) lastListenArgs.onResult(t);
       }
     };
 
     recognition.onerror = (e) => {
+      recognitionRunning = false;
       if (engEl) engEl.textContent = "ERRORE: " + (e.error || "");
       if (e.error === "not-allowed") {
         const err = document.getElementById("debugError");
-        if (err) err.textContent = "Microfono bloccato: clicca il lucchetto in alto e consenti il microfono.";
+        if (err) err.textContent = "Microfono bloccato: clicca il lucchetto e consenti il microfono.";
+      }
+      if (e.error === "no-speech" || e.error === "aborted") {
+        setTimeout(() => {
+          if (listening && pausedForSpeech === 0) actuallyStartRecognition();
+        }, 300);
       }
     };
 
     recognition.onend = () => {
-      // Riparti da solo se deve ancora ascoltare E non sto parlando
-      if (listening && !pausedForSpeech) {
-        try { recognition.start(); } catch {}
+      recognitionRunning = false;
+      if (listening && pausedForSpeech === 0) {
+        setTimeout(() => {
+          if (listening && pausedForSpeech === 0) actuallyStartRecognition();
+        }, 200);
       }
     };
 
-    recognition.start();
+    listening = true;
+    actuallyStartRecognition();
+    startWatchdog();
     return recognition;
   } catch (e) {
     if (engEl) engEl.textContent = "ERRORE AVVIO";
@@ -183,8 +230,7 @@ export function listen({ onResult, onInterim } = {}) {
 
 export function stopListening() {
   listening = false;
-  pausedForSpeech = false;
-  try { recognition?.stop(); } catch {}
+  actuallyStopRecognition();
   const rec = document.getElementById("debugRec");
   if (rec) rec.textContent = "OFF";
 }
