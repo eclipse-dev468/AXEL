@@ -1,98 +1,258 @@
-// AXEL SERIO - SA DAVVERO LE COSE
+// AXEL - Server con LLM vero (Groq / OpenAI / OpenRouter / Gemini / FreeLLMAPI)
+// Rileva in automatico quale provider usare in base alla chiave nel .env.
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 4173;
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(express.static(__dirname));
 
-// --- SAPERE VERO, SCRITTO BENE ---
+// ----------------------------------------------------------------
+// SAPERE LOCALE (offline, risposta istantanea, senza AI)
+// Tiene i 20 oggetti semplici che già conoscevi + comandi diretti.
+// ----------------------------------------------------------------
 const SAPERE = {
-  "tenda": "Signore, la tenda è fatta così. Il materiale è tessuto: cotone, lino, poliestere o velluto. In alto c'è la fettuccia, una striscia rinforzata dove si attaccano gli anelli, gli occhielli o i ganci. Poi c'è il telo, il pezzo grande di stoffa, tagliato a misura della finestra. In basso c'è l'orlo, la piega cucita per dare peso e farla cadere dritta. Ai lati ci sono le cuciture che tengono insieme il tessuto. Si appende a un bastone o a un binario sopra la finestra. Serve per non far entrare la luce, per privacy e per decorare. Si fa così: si misura la finestra, si taglia la stoffa, si cuce l'orlo in basso e la fettuccia in alto, e si appende.",
-  "computer": "Signore, il computer è fatto così. Fuori c'è il case, la scatola. Dentro c'è la scheda madre, che è la base dove si collega tutto. C'è il processore, che è il cervello e fa i calcoli. C'è la RAM, la memoria veloce dove tiene le cose che sta usando ora. C'è il disco, dove salva i file anche quando è spento. C'è l'alimentatore che dà corrente. Fuori c'è lo schermo, la tastiera e il mouse. Tu gli dai un comando, lui lo esegue in un millesimo di secondo.",
-  "telefono": "Signore, il telefono è un computer piccolo che sta in tasca. Fuori c'è lo schermo touch e la scocca. Dentro c'è la batteria, il processore, la memoria e l'antenna che si collega alle celle telefoniche. Serve per chiamare, mandare messaggi, andare su internet, fare foto e video.",
-  "internet": "Signore, internet è una rete gigante che collega tutti i computer del mondo con cavi e antenne. Quando cerchi una cosa, il tuo telefono chiede a un computer lontano che si chiama server, e quello ti manda indietro la risposta in un attimo. Serve per cercare informazioni, parlare con le persone e vedere video.",
-  "macchina": "Signore, la macchina è fatta così. Ha il motore che brucia benzina o gasolio e fa girare le ruote. Ha il cambio che decide la velocità. Ha 4 ruote con le gomme, i freni per fermarsi, lo sterzo per girare, e la carrozzeria che è la scocca fuori. Dentro c'è il volante, i pedali e i sedili. Serve per spostarsi veloci da un posto all'altro.",
-  "casa": "Signore, la casa è fatta così. Ha le fondamenta sotto terra che la tengono in piedi. Ha i muri di mattoni o cemento, il tetto sopra, le finestre e la porta. Dentro ci sono le stanze: cucina, bagno, camera da letto e salotto. Ci sono i tubi per l'acqua, i fili per la corrente e il riscaldamento. Serve per dormire, mangiare e stare al sicuro.",
-  "tavolo": "Signore, il tavolo è fatto così. Ha il piano sopra, che è la parte piatta dove appoggi le cose, di legno, vetro o plastica. Sotto ha 4 gambe che lo tengono in piedi, collegate tra loro per non farlo ballare. Serve per mangiare, lavorare e appoggiare le cose.",
-  "sedia": "Signore, la sedia è fatta così. Ha la seduta, dove ti siedi, lo schienale dietro per appoggiare la schiena, e 4 gambe. A volte ha i braccioli. È fatta di legno, plastica o metallo. Serve per sedersi.",
-  "pizza": "Signore, la pizza è fatta così. La base è impasto di farina, acqua, lievito e sale, steso tondo. Sopra si mette passata di pomodoro, mozzarella e olio. Poi va in forno a 250 gradi per 7-8 minuti, finché la pasta è dorata e la mozzarella sciolta. La Margherita ha solo pomodoro, mozzarella e basilico.",
-  "pasta": "Signore, la pasta è fatta con farina di grano duro e acqua, o con uova. Si impasta, si stende e si taglia nella forma che vuoi: spaghetti, penne, fusilli. Poi si cuoce in acqua bollente salata per 8-10 minuti. Si condisce con sugo, olio o burro.",
-  "cane": "Signore, il cane è un animale domestico. Ha 4 zampe, la coda, le orecchie e il naso che sente gli odori molto meglio di noi. Mangia carne, crocchette e dorme tanto. È intelligente, capisce le parole e vuole stare con le persone. Serve come amico e per fare compagnia.",
-  "gatto": "Signore, il gatto è un animale domestico. Ha 4 zampe, la coda lunga, le orecchie a punta e gli occhi che vedono al buio. È agile, salta alto, si pulisce da solo leccandosi. Dorme tanto, mangia carne e crocchette. È indipendente ma vuole le coccole.",
-  "sole": "Signore, il sole è una stella, una palla gigante di gas caldissimo che sta al centro del sistema solare. È così caldo che brucia e manda luce e calore sulla Terra. Senza di lui non ci sarebbe vita, perché le piante hanno bisogno della sua luce per crescere.",
-  "luna": "Signore, la luna è il satellite della Terra, una palla di roccia che gira intorno a noi. Non ha luce sua, riflette la luce del sole. La vediamo cambiare forma perché il sole la illumina in modo diverso ogni notte. Fa le maree nel mare.",
-  "acqua": "Signore, l'acqua è fatta di due atomi di idrogeno e uno di ossigeno. È liquida, trasparente, senza odore. Serve per bere, per lavarsi, per cucinare e per far crescere le piante. Se fa freddo diventa ghiaccio, se fa caldo diventa vapore."
+  "tenda": "Signore, la tenda è fatta così. Il materiale è tessuto: cotone, lino, poliestere o velluto. In alto c'è la fettuccia, una striscia rinforzata dove si attaccano gli anelli, gli occhielli o i ganci. Poi c'è il telo, il pezzo grande di stoffa, tagliato a misura della finestra. In basso c'è l'orlo, la piega cucita per dare peso e farla cadere dritta. Si appende a un bastone o a un binario sopra la finestra. Serve per non far entrare la luce, per privacy e per decorare.",
+  "computer": "Signore, il computer è fatto così. Fuori c'è il case. Dentro c'è la scheda madre, il processore (il cervello), la RAM (memoria veloce), il disco (memoria permanente) e l'alimentatore. Fuori ci sono schermo, tastiera e mouse. Tu gli dai un comando, lui lo esegue in un millesimo di secondo.",
+  "telefono": "Signore, il telefono è un computer piccolo che sta in tasca. Fuori c'è lo schermo touch e la scocca. Dentro batteria, processore, memoria e antenna. Serve per chiamare, mandare messaggi, andare su internet, fare foto.",
+  "internet": "Signore, internet è una rete gigante che collega tutti i computer del mondo con cavi e antenne. Quando cerchi una cosa, il tuo telefono chiede a un server lontano, e quello ti manda la risposta in un attimo.",
+  "macchina": "Signore, la macchina ha il motore che brucia benzina o gasolio e fa girare le ruote, il cambio, 4 ruote con le gomme, i freni, lo sterzo e la carrozzeria. Dentro ci sono volante, pedali e sedili. Serve per spostarsi velocemente.",
+  "casa": "Signore, la casa ha le fondamenta, i muri, il tetto, finestre e porta. Dentro ci sono cucina, bagno, camera e salotto. Ci sono i tubi per l'acqua, i fili per la corrente e il riscaldamento.",
+  "tavolo": "Signore, il tavolo ha un piano (legno, vetro o plastica) e 4 gambe collegate tra loro. Serve per mangiare, lavorare e appoggiare le cose.",
+  "sedia": "Signore, la sedia ha la seduta, lo schienale, 4 gambe e a volte i braccioli. È di legno, plastica o metallo. Serve per sedersi.",
+  "pizza": "Signore, la pizza è impasto di farina, acqua, lievito e sale steso tondo, con passata di pomodoro, mozzarella e olio. Va in forno a 250 gradi per 7-8 minuti. La Margherita ha solo pomodoro, mozzarella e basilico.",
+  "pasta": "Signore, la pasta è fatta con farina di grano duro e acqua, o con uova. Si cuoce in acqua bollente salata per 8-10 minuti. Si condisce con sugo, olio o burro.",
+  "cane": "Signore, il cane è un animale domestico con 4 zampe, coda, orecchie e un naso che sente odori molto meglio del nostro. Mangia carne, crocchette e dorme tanto. È intelligente e fa compagnia.",
+  "gatto": "Signore, il gatto è un animale domestico con 4 zampe, coda lunga, orecchie a punta e occhi che vedono al buio. È agile, salta alto, si pulisce da solo leccandosi. È indipendente ma vuole le coccole.",
+  "sole": "Signore, il sole è una stella, una palla gigante di gas caldissimo al centro del sistema solare. Manda luce e calore sulla Terra. Senza di lui non ci sarebbe vita.",
+  "luna": "Signore, la luna è il satellite della Terra. Non ha luce sua, riflette quella del sole. Cambia forma ogni notte perché il sole la illumina diversamente. Fa le maree.",
+  "acqua": "Signore, l'acqua è fatta di due atomi di idrogeno e uno di ossigeno. È liquida, trasparente, senza odore. Serve per bere, lavarsi, cucinare. Se fa freddo diventa ghiaccio, se fa caldo vapore."
 };
 
 function trovaSapere(domanda) {
-  let q = domanda.toLowerCase();
-  for (let chiave in SAPERE) {
+  const q = domanda.toLowerCase();
+  for (const chiave in SAPERE) {
     if (q.includes(chiave)) return SAPERE[chiave];
   }
   return null;
 }
 
-async function wiki(domanda) {
-  try {
-    let parola = domanda.toLowerCase().replace(/spiegami|dimmi|come è fatta|come è fatto|cos'è|cosa è|che cos'è|chi è|parlami di|\?/gi, "").trim() || domanda;
-    let url = "https://it.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&origin=*&titles=" + encodeURIComponent(parola);
-    let r = await fetch(url);
-    let d = await r.json();
-    let pages = d.query.pages;
-    let key = Object.keys(pages)[0];
-    let testo = pages[key]?.extract;
-    if (testo && testo.length > 40) return testo.split(". ").slice(0, 6).join(". ") + ".";
-  } catch {}
+// ----------------------------------------------------------------
+// RILEVAMENTO PROVIDER LLM
+// ----------------------------------------------------------------
+function detectProvider() {
+  if (process.env.GROQ_API_KEY) {
+    return {
+      name: "groq",
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      key: process.env.GROQ_API_KEY,
+      model: process.env.AXEL_MODEL || "llama-3.3-70b-versatile",
+    };
+  }
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      name: "openai",
+      url: "https://api.openai.com/v1/chat/completions",
+      key: process.env.OPENAI_API_KEY,
+      model: process.env.AXEL_MODEL || "gpt-4o-mini",
+    };
+  }
+  if (process.env.OPENROUTER_API_KEY) {
+    return {
+      name: "openrouter",
+      url: "https://openrouter.ai/api/v1/chat/completions",
+      key: process.env.OPENROUTER_API_KEY,
+      model: process.env.AXEL_MODEL || "meta-llama/llama-3.3-70b-instruct:free",
+    };
+  }
+  if (process.env.GEMINI_API_KEY) {
+    return {
+      name: "gemini",
+      url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      key: process.env.GEMINI_API_KEY,
+      model: process.env.AXEL_MODEL || "gemini-1.5-flash",
+    };
+  }
+  if (process.env.FREELLM_API_KEY) {
+    return {
+      name: "freellmapi",
+      url: (process.env.FREELLM_URL || "http://localhost:3001") + "/v1/chat/completions",
+      key: process.env.FREELLM_API_KEY,
+      model: process.env.AXEL_MODEL || "auto",
+    };
+  }
   return null;
 }
 
-async function pollinations(domanda) {
-  try {
-    // Ora chiedo una spiegazione vera, con struttura, non un esempio a caso
-    let prompt = "Sei AXEL. Spiega in italiano semplice, con struttura vera: 1) di cosa è fatta, 2) come è fatta, 3) a cosa serve, 4) come si fa. Non fare esempi con camerieri o cose a caso. Spiega la cosa chiesta in modo concreto. Domanda: " + domanda;
-    let url = "https://text.pollinations.ai/" + encodeURIComponent(prompt);
-    let r = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!r.ok) return null;
-    let t = await r.text();
-    if (t && t.length > 50 && !t.toLowerCase().includes("rate limit") && !t.toLowerCase().includes("cameriere")) return t.slice(0, 1400);
-  } catch {}
-  return null;
+const PROVIDER = detectProvider();
+
+// ----------------------------------------------------------------
+// PROMPT DI SISTEMA
+// ----------------------------------------------------------------
+function buildSystemPrompt() {
+  const now = new Date().toLocaleString("it-IT", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+  return `Sei AXEL, assistente personale in stile Iron Man. Parli italiano.
+Tono: calmo, brillante, elegante, con un filo di ironia britannica. Dai del tu, chiama l'utente "signore". Mai servile, mai prolisso.
+
+REGOLE:
+- Rispondi in modo diretto e concreto. Frasi brevi e scorrevoli.
+- Di norma 1-3 frasi (max ~60 parole). Approfondisci solo se te lo chiede ("spiegami", "nel dettaglio").
+- Niente elenchi puntati, markdown, emoji, simboli o parentesi. Se devi elencare, fallo a voce: "primo..., poi..., infine...".
+- Numeri, orari e date scritti come si pronunciano naturalmente.
+- Se non sai qualcosa, dillo con eleganza. Non inventare mai fatti, date, nomi o numeri.
+- Non hai accesso a internet in tempo reale: per notizie, meteo o prezzi recenti dillo chiaramente.
+- Usa il contesto della conversazione e la memoria che ricevi.
+- Adesso è ${now}.`;
 }
 
+// ----------------------------------------------------------------
+// CHIAMATA AL PROVIDER (OpenAI-compatibile)
+// ----------------------------------------------------------------
+async function askLLM(domanda, memoria) {
+  if (!PROVIDER) {
+    return null; // segnala "nessuna chiave configurata"
+  }
+
+  const messages = [{ role: "system", content: buildSystemPrompt() }];
+  if (memoria && (memoria.userName || memoria.facts || memoria.lastConversations)) {
+    const ctx = [];
+    if (memoria.userName) ctx.push(`Nome utente: ${memoria.userName}.`);
+    if (memoria.facts) ctx.push(`Cose che sa: ${memoria.facts}.`);
+    if (memoria.lastConversations) ctx.push(`Conversazioni recenti:\n${memoria.lastConversations}`);
+    if (ctx.length) messages.push({ role: "system", content: "MEMORIA:\n" + ctx.join("\n") });
+  }
+  messages.push({ role: "user", content: domanda });
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+
+  try {
+    const r = await fetch(PROVIDER.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PROVIDER.key}`,
+        ...(PROVIDER.name === "openrouter" && {
+          "HTTP-Referer": "http://localhost:4173",
+          "X-Title": "AXEL",
+        }),
+      },
+      body: JSON.stringify({
+        model: PROVIDER.model,
+        messages,
+        temperature: 0.7,
+        max_tokens: 400,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!r.ok) {
+      const err = await r.text();
+      console.error(`[LLM ${PROVIDER.name}] HTTP ${r.status}: ${err.slice(0, 200)}`);
+      return null;
+    }
+
+    const data = await r.json();
+    const answer = data?.choices?.[0]?.message?.content?.trim();
+    if (!answer) {
+      console.warn(`[LLM ${PROVIDER.name}] risposta vuota`);
+      return null;
+    }
+    console.log(`[LLM ${PROVIDER.name} · ${PROVIDER.model}] ok (${answer.length} char)`);
+    return answer;
+  } catch (e) {
+    if (e.name === "AbortError") console.warn(`[LLM ${PROVIDER.name}] timeout`);
+    else console.error(`[LLM ${PROVIDER.name}] errore:`, e.message);
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ----------------------------------------------------------------
+// API
+// ----------------------------------------------------------------
 app.post("/api/chat", async (req, res) => {
   try {
-    let domanda = (req.body?.domanda || "").toString().slice(0, 1000);
+    const domanda = String(req.body?.domanda || "").slice(0, 2000).trim();
+    const memoria = req.body?.memoria || null;
     if (!domanda) return res.json({ risposta: "Signore, non ho sentito la domanda." });
-    let q = domanda.toLowerCase();
-    if (q.includes("che ore")) return res.json({ risposta: "Sono le " + new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) + ", signore." });
-    if (q.includes("che giorno")) return res.json({ risposta: "Oggi è " + new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + ", signore." });
+
+    const q = domanda.toLowerCase();
+
+    // 1) Comandi locali (istantanei, senza AI)
+    if (q.includes("che ore") || q.includes("che ora")) {
+      return res.json({
+        risposta: "Sono le " + new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) + ", signore.",
+      });
+    }
+    if (q.includes("che giorno") || q.includes("che data")) {
+      return res.json({
+        risposta: "Oggi è " + new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + ", signore.",
+      });
+    }
     if (q.includes("quanto fa")) {
       try {
-        let expr = domanda.replace(/quanto fa/gi, "").replace(/più/gi, "+").replace(/per/gi, "*").replace(/diviso/gi, "/").replace(/meno/gi, "-").replace(/x/gi, "*");
-        return res.json({ risposta: "Fa " + Function("return (" + expr + ")")() + ", signore." });
+        const expr = domanda
+          .replace(/quanto fa/gi, "")
+          .replace(/più/gi, "+").replace(/per/gi, "*")
+          .replace(/diviso/gi, "/").replace(/meno/gi, "-").replace(/x/gi, "*");
+        const result = Function("return (" + expr + ")")();
+        return res.json({ risposta: "Fa " + result + ", signore." });
       } catch {}
     }
-    // 1. Prima il sapere vero che gli ho insegnato
-    let s = trovaSapere(domanda);
-    if (s) return res.json({ risposta: s });
-    // 2. Poi Pollinations con prompt serio, non con camerieri
-    let r = await pollinations(domanda);
-    if (r) return res.json({ risposta: r });
-    // 3. Poi 【entity-Wikipedia¦canonical_name=Wikipedia】
-    r = await wiki(domanda);
-    if (r) return res.json({ risposta: r });
-    // 4. Ultima risorsa: spiego che non lo so, ma non invento esempi stupidi
-    return res.json({ risposta: "Signore, per " + domanda + " non ho ancora la spiegazione pronta. Dimmi una cosa che so bene, tipo tenda, computer, macchina, pizza, cane, e te la spiego davvero bene." });
+
+    // 2) Sapere locale (istantaneo, senza AI)
+    const locale = trovaSapere(domanda);
+    if (locale) return res.json({ risposta: locale, fonte: "locale" });
+
+    // 3) LLM (Groq/OpenAI/etc.)
+    const answer = await askLLM(domanda, memoria);
+    if (answer) return res.json({ risposta: answer, fonte: PROVIDER.name });
+
+    // 4) Nessuna chiave configurata
+    return res.json({
+      risposta: `Signore, per rispondere a "cosa" che va oltre il mio sapere locale mi serve una chiave API. Apri il file .env nella cartella di AXEL e incolla la chiave gratuita di Groq (la ottieni in 30 secondi su console.groq.com/keys). Poi riavvia con "npm start".`,
+      fonte: "no-key",
+    });
   } catch (e) {
-    return res.json({ risposta: "Signore, c'è un problema. Riprova." });
+    console.error("[api/chat] error:", e);
+    return res.json({ risposta: "Signore, c'è stato un problema. Riprova." });
   }
 });
 
-app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "index.html")); });
-app.listen(PORT, () => { console.log("AXEL SERIO online su http://localhost:" + PORT); });
+// Endpoint di salute (utile per debug)
+app.get("/api/health", (req, res) => {
+  res.json({
+    ok: true,
+    provider: PROVIDER ? PROVIDER.name : null,
+    model: PROVIDER ? PROVIDER.model : null,
+  });
+});
+
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
+
+app.listen(PORT, () => {
+  console.log("─────────────────────────────────────");
+  console.log(`AXEL online → http://localhost:${PORT}`);
+  if (PROVIDER) {
+    console.log(`🧠  Cervello: ${PROVIDER.name.toUpperCase()} · ${PROVIDER.model}`);
+  } else {
+    console.log("⚠️  Nessuna chiave API configurata nel .env");
+    console.log("    AXEL userà solo il sapere locale (20 oggetti).");
+    console.log("    Per farlo sapere TUTTO: https://console.groq.com/keys");
+    console.log("    (gratis, incolla la chiave nel file .env, riavvia)");
+  }
+  console.log("─────────────────────────────────────");
+});
